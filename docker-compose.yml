@@ -2,6 +2,7 @@ services:
   # Serviço do nosso backend NestJS
   backend:
     build: . # Constrói a imagem a partir do Dockerfile nesta mesma pasta
+    command: npm run start:dev 
     ports:
       - "3001:3001" # Mapeia a porta do contêiner para a sua máquina
     env_file:
