@@ -1,6 +1,7 @@
 # Estágio 1: Instalar dependências e construir o projeto
 FROM node:22 AS builder
 
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 # Define o diretório de trabalho
 WORKDIR /usr/src/app
 
@@ -21,6 +22,8 @@ RUN npm run build
 
 # Estágio 2: Imagem final, otimizada para produção
 FROM node:22-slim
+
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /usr/src/app
 
