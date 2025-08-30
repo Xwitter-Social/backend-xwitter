@@ -1,0 +1,35 @@
+services:
+  # Serviço do nosso backend NestJS
+  backend:
+    build: . # Constrói a imagem a partir do Dockerfile nesta mesma pasta
+    ports:
+      - "3001:3001" # Mapeia a porta do contêiner para a sua máquina
+    env_file:
+      - .env # Carrega as variáveis de ambiente do arquivo .env
+    volumes:
+      # Espelha o código local para dentro do contêiner para hot-reload
+      # Isso é SÓ para desenvolvimento.
+      - .:/usr/src/app
+      # Impede que a pasta node_modules local sobrescreva a de dentro do contêiner
+      - /usr/src/app/node_modules
+    depends_on:
+      - db # Diz ao Docker para iniciar o 'db' antes do 'backend'
+
+  # Serviço do banco de dados PostgreSQL
+  db:
+    image: postgres:15 # Usa a imagem oficial do Postgres
+    restart: always # Sempre reinicia o contêiner se ele parar
+    environment:
+      # As credenciais DEVEM ser as mesmas do seu arquivo .env
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: twitter_db
+    ports:
+      - "5432:5432" # Mapeia a porta para acesso externo (ex: com DBeaver)
+    volumes:
+      # Garante que os dados do banco persistam mesmo se o contêiner for recriado
+      - postgres_data:/var/lib/postgresql/data
+
+# Define o volume nomeado para a persistência dos dados
+volumes:
+  postgres_data:

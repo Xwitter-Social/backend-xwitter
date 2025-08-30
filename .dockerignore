@@ -1,0 +1,17 @@
+# Arquivos de log
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Pasta de dependências (será instalada dentro do contêiner)
+node_modules
+
+# Pasta do código compilado (será gerada dentro do contêiner)
+dist
+
+# Arquivos de ambiente - NUNCA devem ir para a imagem
+.env
+
+# Arquivos do Docker
+Dockerfile
+docker-compose.yml
