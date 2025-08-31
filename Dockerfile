@@ -2,39 +2,31 @@
 FROM node:22 AS builder
 
 RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
-# Define o diretório de trabalho
 WORKDIR /usr/src/app
 
-# Copia os arquivos de pacote e instala TODAS as dependências (incluindo as de dev)
 COPY package*.json ./
 RUN npm install
-
-# Copia todo o resto do código-fonte
 COPY . .
 
-# Gera o cliente do Prisma com base no seu schema
 RUN npx prisma generate
-
-# Constrói a aplicação (compila de TypeScript para JavaScript)
 RUN npm run build
 
 # ---
 
-# Estágio 2: Imagem final, otimizada para produção
+# Estágio 2: Imagem final
 FROM node:22-slim
 
 RUN apt-get update && apt-get install -y openssl procps && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /usr/src/app
 
-# Copia apenas os node_modules de produção e o código compilado do estágio 'builder'
+# Copia node_modules e tudo que o código precisa
 COPY --from=builder /usr/src/app/node_modules ./node_modules
 COPY --from=builder /usr/src/app/dist ./dist
 COPY --from=builder /usr/src/app/prisma ./prisma
 COPY --from=builder /usr/src/app/package*.json ./
+COPY --from=builder /usr/src/app/src ./src 
 
-# Expõe a porta em que a aplicação NestJS vai rodar
 EXPOSE 3001
 
-# O comando para iniciar a aplicação
 CMD ["node", "dist/main"]
