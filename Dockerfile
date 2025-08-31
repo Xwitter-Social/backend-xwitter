@@ -23,7 +23,7 @@ RUN npm run build
 # Estágio 2: Imagem final, otimizada para produção
 FROM node:22-slim
 
-RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y openssl procps && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /usr/src/app
 
