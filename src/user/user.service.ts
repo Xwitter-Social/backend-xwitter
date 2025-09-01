@@ -88,28 +88,26 @@ export class UserService {
     id: number,
     data: Prisma.UserUpdateInput,
   ): Promise<UserModel> {
-    // Busca o usuário uma única vez
     const user = await this.userRepo.findUnique({ id });
     if (!user) throw new NotFoundException('Usuário não encontrado.');
 
-    // Validações e verificações de duplicatas em paralelo
     const validationPromises: Promise<void>[] = [];
 
     if (data.email && data.email !== user.email) {
       const emailToValidate = this.extractStringValue(data.email);
       if (emailToValidate) {
         this.validateEmail(emailToValidate);
-        validationPromises.push(
-          this.userRepo
-            .findUnique({
-              email: emailToValidate,
-            })
-            .then((existingEmail) => {
-              if (existingEmail && existingEmail.id !== id) {
-                throw new ConflictException('Email já cadastrado.');
-              }
-            }),
-        );
+
+        const emailValidation = async (): Promise<void> => {
+          const existingEmail = await this.userRepo.findUnique({
+            email: emailToValidate,
+          });
+          if (existingEmail && existingEmail.id !== id) {
+            throw new ConflictException('Email já cadastrado.');
+          }
+        };
+
+        validationPromises.push(emailValidation());
       }
     }
 
@@ -117,19 +115,21 @@ export class UserService {
       const usernameToValidate = this.extractStringValue(data.username);
       if (usernameToValidate) {
         this.validateUsername(usernameToValidate);
-        validationPromises.push(
-          this.userRepo
-            .findUnique({
-              username: usernameToValidate,
-            })
-            .then((existingUsername) => {
-              if (existingUsername && existingUsername.id !== id) {
-                throw new ConflictException('Nome de usuário já cadastrado.');
-              }
-            }),
-        );
+
+        const usernameValidation = async (): Promise<void> => {
+          const existingUsername = await this.userRepo.findUnique({
+            username: usernameToValidate,
+          });
+          if (existingUsername && existingUsername.id !== id) {
+            throw new ConflictException('Nome de usuário já cadastrado.');
+          }
+        };
+
+        validationPromises.push(usernameValidation());
       }
     }
+
+    await Promise.all(validationPromises);
 
     if (data.password) {
       const passwordToValidate = this.extractStringValue(data.password);
@@ -138,7 +138,6 @@ export class UserService {
         data.password = await bcrypt.hash(passwordToValidate, 10);
       }
     }
-    await Promise.all(validationPromises);
 
     return this.userRepo.update({ where: { id }, data });
   }
