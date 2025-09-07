@@ -26,28 +26,36 @@ Antes de começar, garanta que você tenha as seguintes ferramentas instaladas n
 Siga estes passos para configurar e executar o ambiente de desenvolvimento localmente.
 
 **1. Clone o repositório**
-Abra seu terminal e clone o projeto para a sua máquina.
 ```bash
-git clone [https://github.com/rafgpereira/backend-twitter.git](https://github.com/rafgpereira/backend-twitter.git)
-cd backend-social
+git clone https://github.com/rafgpereira/backend-twitter.git
+cd backend-twitter
 ```
 
 **2. Crie o arquivo de ambiente (.env)**
-
-O projeto precisa de um arquivo `.env` para configurar a conexão com o banco de dados. Você pode criá-lo a partir do arquivo de exemplo fornecido.
 ```bash
 cp .env.example .env
 ```
-> O arquivo `.env.example` deve ser versionado no Git com as chaves necessárias, mas sem valores sensíveis. O `.env` nunca deve ser versionado.
+> O arquivo `.env` já vem com as configurações corretas para o ambiente Docker.
 
-**3. Construa as imagens e suba os contêineres**
-
-Este comando irá ler o `docker-compose.yml`, construir a imagem da sua aplicação NestJS e iniciar os contêineres do backend e do banco de dados em segundo plano.
+**3. Inicie os serviços (Primeira execução)**
 ```bash
-docker compose up --build -d
+docker-compose up --build
 ```
 
-**4. Execute a migração inicial do banco de dados**
+🎉 **Pronto!** O sistema agora irá:
+- ✅ Construir as imagens Docker
+- ✅ Iniciar o PostgreSQL
+- ✅ Aguardar o banco estar disponível
+- ✅ **Executar automaticamente as migrações**
+- ✅ Gerar o cliente Prisma
+- ✅ Iniciar a aplicação NestJS
+
+A aplicação estará disponível em: `http://localhost:3001`
+
+**Para próximas execuções:**
+```bash
+docker-compose up
+```
 Após os contêineres estarem no ar, o banco de dados estará criado, mas vazio. Este comando executa as migrações do Prisma para criar todas as tabelas necessárias.
 
 **Este passo é crucial e só precisa ser feito uma vez durante o setup inicial.**
