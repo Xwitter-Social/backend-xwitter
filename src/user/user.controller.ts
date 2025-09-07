@@ -28,7 +28,7 @@ export class UserController {
 
   @Get(':id')
   async getUserById(@Param('id') id: string): Promise<UserModel> {
-    return this.userService.getUser({ id: Number(id) });
+    return this.userService.getUser({ id });
   }
 
   @Get('email/:email')
@@ -48,11 +48,11 @@ export class UserController {
     @Param('id') id: string,
     @Body() data: Prisma.UserUpdateInput,
   ): Promise<UserModel> {
-    return this.userService.updateUser(Number(id), data);
+    return this.userService.updateUser(id, data);
   }
 
   @Delete(':id')
   async deleteUser(@Param('id') id: string): Promise<UserModel> {
-    return this.userService.deleteUser(Number(id));
+    return this.userService.deleteUser(id);
   }
 }

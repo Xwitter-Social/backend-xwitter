@@ -85,7 +85,7 @@ export class UserService {
   }
 
   async updateUser(
-    id: number,
+    id: string,
     data: Prisma.UserUpdateInput,
   ): Promise<UserModel> {
     const user = await this.userRepo.findUnique({ id });
@@ -142,7 +142,7 @@ export class UserService {
     return this.userRepo.update({ where: { id }, data });
   }
 
-  async deleteUser(id: number): Promise<UserModel> {
+  async deleteUser(id: string): Promise<UserModel> {
     try {
       return await this.userRepo.delete({ id });
     } catch {
