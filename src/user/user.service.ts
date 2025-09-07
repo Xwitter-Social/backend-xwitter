@@ -45,6 +45,17 @@ export class UserService {
     return null;
   }
 
+  private isValidUUID(str: string): boolean {
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(str);
+  }
+
+  private isValidEmail(str: string): boolean {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(str);
+  }
+
   async createUser(data: Prisma.UserCreateInput): Promise<UserModel> {
     // Validações síncronas primeiro
     this.validateEmail(data.email);
@@ -82,6 +93,24 @@ export class UserService {
     const user = await this.userRepo.findUnique(where);
     if (!user) throw new NotFoundException('Usuário não encontrado.');
     return user;
+  }
+
+  async getUserByIdentifier(identifier: string): Promise<UserModel> {
+    let whereClause: Prisma.UserWhereUniqueInput;
+
+    // Determina automaticamente o tipo de identificador
+    if (this.isValidUUID(identifier)) {
+      // É um UUID (id)
+      whereClause = { id: identifier };
+    } else if (this.isValidEmail(identifier)) {
+      // É um email
+      whereClause = { email: identifier };
+    } else {
+      // É um username
+      whereClause = { username: identifier };
+    }
+
+    return this.getUser(whereClause);
   }
 
   async updateUser(

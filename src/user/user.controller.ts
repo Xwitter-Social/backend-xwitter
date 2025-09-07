@@ -26,21 +26,9 @@ export class UserController {
     return this.userService.getUsers();
   }
 
-  @Get(':id')
-  async getUserById(@Param('id') id: string): Promise<UserModel> {
-    return this.userService.getUser({ id });
-  }
-
-  @Get('email/:email')
-  async getUserByEmail(@Param('email') email: string): Promise<UserModel> {
-    return this.userService.getUser({ email });
-  }
-
-  @Get('username/:username')
-  async getUserByUsername(
-    @Param('username') username: string,
-  ): Promise<UserModel> {
-    return this.userService.getUser({ username });
+  @Get(':identifier')
+  async getUser(@Param('identifier') identifier: string): Promise<UserModel> {
+    return this.userService.getUserByIdentifier(identifier);
   }
 
   @Patch(':id')
