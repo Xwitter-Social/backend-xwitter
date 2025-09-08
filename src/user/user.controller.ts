@@ -6,9 +6,11 @@ import {
   Param,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { Prisma, User as UserModel } from '@prisma/client';
+import { AuthGuard } from 'src/auth/auth.guard';
 
 @Controller('user')
 export class UserController {
@@ -26,6 +28,7 @@ export class UserController {
     return this.userService.getUsers();
   }
 
+  @UseGuards(AuthGuard)
   @Get(':identifier')
   async getUser(@Param('identifier') identifier: string): Promise<UserModel> {
     return this.userService.getUserByIdentifier(identifier);
