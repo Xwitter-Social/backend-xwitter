@@ -31,4 +31,34 @@ export class UserRepository {
   async delete(where: Prisma.UserWhereUniqueInput): Promise<UserModel> {
     return this.prisma.user.delete({ where });
   }
+
+  async searchUsers(query: string): Promise<UserModel[]> {
+    return this.prisma.user.findMany({
+      where: {
+        OR: [
+          {
+            username: {
+              contains: query,
+              mode: 'insensitive',
+            },
+          },
+          {
+            name: {
+              contains: query,
+              mode: 'insensitive',
+            },
+          },
+        ],
+      },
+      take: 50,
+      orderBy: [
+        {
+          username: 'asc',
+        },
+        {
+          name: 'asc',
+        },
+      ],
+    });
+  }
 }

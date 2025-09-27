@@ -3,6 +3,7 @@ import {
   ConflictException,
   BadRequestException,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { UserRepository } from './user.repository';
 import { IdentifierUtil } from '../common/utils/identifier.util';
@@ -69,14 +70,12 @@ export class UserService {
     return this.userRepo.create(data);
   }
 
-  async getUsers(page?: number, limit?: number): Promise<UserModel[]> {
-    // Se não for fornecido paginação, retorna todos
-    if (!page || !limit) {
-      return this.userRepo.findAll();
+  async searchUsers(query: string): Promise<UserModel[]> {
+    if (!query || query.trim().length === 0) {
+      return [];
     }
 
-    // Com paginação (para implementar no repository depois)
-    return this.userRepo.findAll();
+    return await this.userRepo.searchUsers(query.trim());
   }
 
   async getUserByIdentifier(identifier: string): Promise<UserModel> {
@@ -90,9 +89,16 @@ export class UserService {
   async updateUser(
     id: string,
     data: Prisma.UserUpdateInput,
+    currentUserId: string,
   ): Promise<UserModel> {
+    // Verifica se o usuário existe
     const user = await this.userRepo.findUnique({ id });
     if (!user) throw new NotFoundException('Usuário não encontrado.');
+
+    // Verifica se o usuário atual tem permissão para editar este perfil
+    if (user.id !== currentUserId) {
+      throw new ForbiddenException('Você só pode editar seu próprio perfil.');
+    }
 
     const validationPromises: Promise<void>[] = [];
 
@@ -145,7 +151,16 @@ export class UserService {
     return this.userRepo.update({ where: { id }, data });
   }
 
-  async deleteUser(id: string): Promise<UserModel> {
+  async deleteUser(id: string, currentUserId: string): Promise<UserModel> {
+    // Verifica se o usuário existe
+    const user = await this.userRepo.findUnique({ id });
+    if (!user) throw new NotFoundException('Usuário não encontrado.');
+
+    // Verifica se o usuário atual tem permissão para deletar este perfil
+    if (user.id !== currentUserId) {
+      throw new ForbiddenException('Você só pode deletar seu próprio perfil.');
+    }
+
     try {
       return await this.userRepo.delete({ id });
     } catch {
