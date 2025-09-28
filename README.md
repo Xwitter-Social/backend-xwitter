@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="assets/logo-sem-nome-branca.png" alt="Xwitter Logo" width="200"/>
+</div>
+
 # 🐦 Xwitter - Backend
 
 Uma aplicação de rede social moderna inspirada no Twitter, desenvolvida com **NestJS** e totalmente containerizada com **Docker**. O projeto implementa funcionalidades essenciais de uma rede social, incluindo autenticação JWT, gerenciamento de usuários, posts, comentários, curtidas e sistema de seguidores.
@@ -23,6 +27,8 @@ Xwitter é um clone do Twitter que demonstra boas práticas de engenharia de sof
 - **[JWT](https://jwt.io/)** - Autenticação baseada em tokens
 - **[class-validator](https://github.com/typestack/class-validator)** - Validação de dados
 
+
+
 ---
 
 ## 📊 Modelo do Banco de Dados
@@ -40,6 +46,49 @@ Xwitter é um clone do Twitter que demonstra boas práticas de engenharia de sof
 ## 📋 Quadro Kanban
 
 *[Link para o quadro Kanban será adicionado aqui]*
+
+---
+
+
+## 🏗️ Arquitetura da Solução
+
+O Xwitter foi desenvolvido seguindo os princípios de **Arquitetura Limpa** e **Domain-Driven Design (DDD)**, garantindo separação de responsabilidades, testabilidade e manutenibilidade.
+
+<div align="center">
+  <img src="assets/arquitetura.png" alt="Arquitetura do Sistema Xwitter" width="800"/>
+</div>
+
+### 📋 Camadas da Arquitetura:
+
+#### **🎯 Presentation Layer (Camada de Apresentação)**
+- **Controllers**: Pontos de entrada HTTP/REST
+- **Guards**: Validação de autenticação e autorização
+- **DTOs**: Objetos de transferência de dados com validação
+- **Swagger Decorators**: Documentação automática da API
+
+#### **💼 Business Layer (Camada de Negócio)**
+- **Services**: Lógica de negócio e regras da aplicação
+- **Interfaces**: Contratos para repositórios e serviços
+- **Utils**: Funções auxiliares e utilitários
+
+#### **🗄️ Data Layer (Camada de Dados)**
+- **Repositories**: Padrão Repository para acesso a dados
+- **Prisma ORM**: Mapeamento objeto-relacional
+- **Database**: PostgreSQL com conexões gerenciadas
+
+#### **🔧 Infrastructure Layer (Camada de Infraestrutura)**
+- **Docker**: Containerização da aplicação
+- **JWT**: Sistema de autenticação com tokens
+- **Environment Configuration**: Configuração por variáveis de ambiente
+
+### 🔄 Fluxo de Dados:
+
+1. **Request** → Controller recebe requisição HTTP
+2. **Validation** → DTOs validam dados de entrada
+3. **Authentication** → Guards verificam autenticação/autorização
+4. **Business Logic** → Service processa regras de negócio
+5. **Data Access** → Repository acessa dados via Prisma
+6. **Response** → Dados retornados formatados via DTOs
 
 ---
 
