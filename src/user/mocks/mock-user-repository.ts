@@ -60,9 +60,14 @@ export class MockUserRepository implements IUserRepository {
       throw new Error('User not found');
     }
 
+    // Filtrar campos undefined do objeto data
+    const cleanData = Object.fromEntries(
+      Object.entries(data).filter(([, value]) => value !== undefined),
+    );
+
     const updatedUser = {
       ...this.users[userIndex],
-      ...data,
+      ...cleanData,
       updatedAt: new Date(),
     } as User;
 
@@ -91,7 +96,8 @@ export class MockUserRepository implements IUserRepository {
     const result = this.users.filter(
       (user) =>
         user.username.toLowerCase().includes(query.toLowerCase()) ||
-        user.name.toLowerCase().includes(query.toLowerCase()),
+        user.name.toLowerCase().includes(query.toLowerCase()) ||
+        (user.bio && user.bio.toLowerCase().includes(query.toLowerCase())),
     );
 
     return Promise.resolve(result.slice(0, 50)); // Limitar a 50 resultados como no repositório real
