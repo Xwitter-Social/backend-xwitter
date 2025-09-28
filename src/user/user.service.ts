@@ -5,7 +5,7 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
-import { UserRepository } from './user.repository';
+import { IUserRepository } from './interfaces/user-repository.interface';
 import { IdentifierUtil } from '../common/utils/identifier.util';
 import * as bcrypt from 'bcrypt';
 import { Prisma, User as UserModel } from '@prisma/client';
@@ -13,7 +13,7 @@ import { CreateUserDto, UpdateUserDto } from './dto';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly userRepo: UserRepository) {}
+  constructor(private readonly userRepo: IUserRepository) {}
 
   private validateEmail(email: string) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

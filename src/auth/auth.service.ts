@@ -1,5 +1,5 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { UserRepository } from 'src/user/user.repository';
+import { IUserRepository } from 'src/user/interfaces/user-repository.interface';
 import { IdentifierUtil } from '../common/utils/identifier.util';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
@@ -8,7 +8,7 @@ import { SignInDto } from './dto';
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly userRepo: UserRepository,
+    private readonly userRepo: IUserRepository,
     private readonly jwtService: JwtService,
   ) {}
 
