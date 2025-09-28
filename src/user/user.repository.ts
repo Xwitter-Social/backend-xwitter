@@ -17,10 +17,6 @@ export class UserRepository implements IUserRepository {
     return this.prisma.user.findUnique({ where });
   }
 
-  async findAll(): Promise<UserModel[]> {
-    return this.prisma.user.findMany();
-  }
-
   async update(params: {
     where: Prisma.UserWhereUniqueInput;
     data: Prisma.UserUpdateInput;

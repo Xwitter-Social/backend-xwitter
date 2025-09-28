@@ -33,17 +33,6 @@ export class MockUserRepository implements IUserRepository {
     return Promise.resolve(user || null);
   }
 
-  findMany(args?: Prisma.UserFindManyArgs): Promise<User[]> {
-    let result = [...this.users];
-
-    // Aplicar TAKE (limite) se existir
-    if (args?.take) {
-      result = result.slice(0, args.take);
-    }
-
-    return Promise.resolve(result);
-  }
-
   update(params: {
     where: Prisma.UserWhereUniqueInput;
     data: Prisma.UserUpdateInput;
@@ -60,7 +49,6 @@ export class MockUserRepository implements IUserRepository {
       throw new Error('User not found');
     }
 
-    // Filtrar campos undefined do objeto data
     const cleanData = Object.fromEntries(
       Object.entries(data).filter(([, value]) => value !== undefined),
     );
@@ -100,7 +88,7 @@ export class MockUserRepository implements IUserRepository {
         (user.bio && user.bio.toLowerCase().includes(query.toLowerCase())),
     );
 
-    return Promise.resolve(result.slice(0, 50)); // Limitar a 50 resultados como no repositório real
+    return Promise.resolve(result.slice(0, 50));
   }
 
   // Métodos auxiliares para testes
@@ -113,7 +101,7 @@ export class MockUserRepository implements IUserRepository {
     this.clear();
     users.forEach((userData, index) => {
       const user: User = {
-        id: userData.id || (index + 1).toString(), // Use o ID fornecido ou gere um novo
+        id: userData.id || (index + 1).toString(),
         email: userData.email || `user${index + 1}@test.com`,
         username: userData.username || `user${index + 1}`,
         password: userData.password || 'hashedPassword123',

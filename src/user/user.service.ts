@@ -37,12 +37,10 @@ export class UserService {
   }
 
   async createUser(createUserDto: CreateUserDto): Promise<UserModel> {
-    // Validações síncronas primeiro
     this.validateEmail(createUserDto.email);
     this.validatePassword(createUserDto.password);
     this.validateUsername(createUserDto.username);
 
-    // Verificações de duplicatas em paralelo
     const [existingEmail, existingUsername] = await Promise.all([
       this.userRepo.findUnique({ email: createUserDto.email }),
       this.userRepo.findUnique({ username: createUserDto.username }),
@@ -52,10 +50,8 @@ export class UserService {
     if (existingUsername)
       throw new ConflictException('Nome de usuário já cadastrado.');
 
-    // Hash da senha
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
 
-    // Preparar dados para criação
     const userData: Prisma.UserCreateInput = {
       email: createUserDto.email,
       username: createUserDto.username,

@@ -10,7 +10,6 @@ import {
 import { CreateUserDto, UpdateUserDto, UserResponseDto } from '../../user/dto';
 import { SignInDto, AuthResponseDto } from '../../auth/dto';
 
-// Auth Decorators
 export const ApiSignIn = () =>
   applyDecorators(
     ApiOperation({
@@ -33,7 +32,6 @@ export const ApiSignIn = () =>
     }),
   );
 
-// User Decorators
 export const ApiCreateUser = () =>
   applyDecorators(
     ApiOperation({

@@ -22,9 +22,8 @@ export class UserResponseDto {
   @ApiProperty({
     description: 'Nome completo do usuário',
     example: 'João Silva',
-    required: false,
   })
-  name?: string;
+  name: string;
 
   @ApiProperty({
     description: 'Biografia do usuário',
