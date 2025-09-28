@@ -3,6 +3,7 @@ import { UserRepository } from 'src/user/user.repository';
 import { IdentifierUtil } from '../common/utils/identifier.util';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
+import { SignInDto } from './dto';
 
 @Injectable()
 export class AuthService {
@@ -11,11 +12,8 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async signIn(params: {
-    identifier: string;
-    password: string;
-  }): Promise<{ accessToken: string }> {
-    const { identifier, password } = params;
+  async signIn(signInDto: SignInDto): Promise<{ accessToken: string }> {
+    const { identifier, password } = signInDto;
     const whereClause = IdentifierUtil.classifyIdentifier(identifier);
 
     const user = await this.userRepo.findUnique(whereClause);
