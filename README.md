@@ -27,7 +27,13 @@ Xwitter é um clone do Twitter que demonstra boas práticas de engenharia de sof
 - **[JWT](https://jwt.io/)** - Autenticação baseada em tokens
 - **[class-validator](https://github.com/typestack/class-validator)** - Validação de dados
 
+---
 
+## 🌆 Protótipo
+
+Clique na imagem abaixo para acessar o protótipo de todas as telas do Xwitter!
+
+[![Tela Inicial](assets/tela-inicial-xwitter.png)](assets/telas-xwitter.pdf)
 
 ---
 
