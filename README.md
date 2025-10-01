@@ -39,7 +39,9 @@ Xwitter é um clone do Twitter que demonstra boas práticas de engenharia de sof
 
 ## 🏗️ Diagrama de Classes UML
 
-*[Esta seção será preenchida com o diagrama UML da aplicação]*
+Foram representados tanto o diagrama de classes da implementação do sistema dentro do NestJS quanto o relacionamento entre as entidades modeladas, no canto inferior direito.
+![Diagrama de Classes](assets/classes-xwitter.svg)
+[Ampliar](assets/classes-xwitter.png)
 
 ---
 
