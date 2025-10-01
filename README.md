@@ -33,7 +33,11 @@ Xwitter é um clone do Twitter que demonstra boas práticas de engenharia de sof
 
 ## 📊 Modelo do Banco de Dados
 
-*[Esta seção será preenchida com o diagrama do banco de dados]*
+O diagrama lógico de dados representa os artefatos que constituem o banco de dados e seus relacionamentos e respectivas cardinalidades de forma visual.
+
+![DLD Xwitter](assets/dld-xwitter.png)
+
+[Ampliar](assets/dld-xwitter.png)
 
 ---
 
