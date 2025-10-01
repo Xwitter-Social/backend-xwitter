@@ -40,14 +40,18 @@ Xwitter é um clone do Twitter que demonstra boas práticas de engenharia de sof
 ## 🏗️ Diagrama de Classes UML
 
 Foram representados tanto o diagrama de classes da implementação do sistema dentro do NestJS quanto o relacionamento entre as entidades modeladas, no canto inferior direito.
+
+
 ![Diagrama de Classes](assets/classes-xwitter.svg)
-[Ampliar](assets/classes-xwitter.png)
+
+
+[Ampliar.](assets/classes-xwitter.png)
 
 ---
 
 ## 📋 Quadro Kanban
 
-*[Link para o quadro Kanban será adicionado aqui]*
+[Acesse o Quadro Kanban para acompanhar o desenvolvimento histórias de usuário.](https://github.com/orgs/Xwitter-Social/projects/2)
 
 ---
 
