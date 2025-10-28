@@ -8,6 +8,12 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { CreateUserDto, UpdateUserDto, UserResponseDto } from '../../user/dto';
+import {
+  CreatePostDto,
+  PostDetailsResponseDto,
+  PostResponseDto,
+  TimelinePostResponseDto,
+} from '../../post/dto';
 import { SignInDto, AuthResponseDto } from '../../auth/dto';
 
 export const ApiSignIn = () =>
@@ -201,5 +207,110 @@ export const ApiDeleteUser = () =>
     ApiResponse({
       status: 404,
       description: 'Usuário não encontrado',
+    }),
+  );
+
+export const ApiCreatePost = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: 'Criar novo post',
+      description: 'Cria um novo post para o usuário autenticado',
+    }),
+    ApiBearerAuth('JWT-auth'),
+    ApiBody({
+      type: CreatePostDto,
+      description: 'Dados do post a ser criado',
+    }),
+    ApiResponse({
+      status: 201,
+      description: 'Post criado com sucesso',
+      type: PostResponseDto,
+    }),
+    ApiResponse({
+      status: 400,
+      description: 'Dados inválidos ou conteúdo vazio/excedido',
+    }),
+    ApiResponse({
+      status: 401,
+      description: 'Token de acesso inválido ou expirado',
+    }),
+  );
+
+export const ApiGetTimeline = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: 'Obter timeline do usuário',
+      description:
+        'Retorna posts do usuário autenticado e de quem ele segue, ordenados do mais recente para o mais antigo',
+    }),
+    ApiBearerAuth('JWT-auth'),
+    ApiResponse({
+      status: 200,
+      description: 'Lista de posts da timeline',
+      type: TimelinePostResponseDto,
+      isArray: true,
+    }),
+    ApiResponse({
+      status: 401,
+      description: 'Token de acesso inválido ou expirado',
+    }),
+  );
+
+export const ApiGetPostDetails = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: 'Obter detalhes de um post',
+      description:
+        'Retorna os detalhes de um post, incluindo autor, contagens e árvore de comentários',
+    }),
+    ApiBearerAuth('JWT-auth'),
+    ApiParam({
+      name: 'id',
+      description: 'ID do post',
+      example: '0d5c9b90-5e8a-4bb7-9f56-4a8da152a87d',
+    }),
+    ApiResponse({
+      status: 200,
+      description: 'Post encontrado com sucesso',
+      type: PostDetailsResponseDto,
+    }),
+    ApiResponse({
+      status: 401,
+      description: 'Token de acesso inválido ou expirado',
+    }),
+    ApiResponse({
+      status: 404,
+      description: 'Post não encontrado',
+    }),
+  );
+
+export const ApiDeletePost = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: 'Excluir post',
+      description: 'Remove um post criado pelo usuário autenticado',
+    }),
+    ApiBearerAuth('JWT-auth'),
+    ApiParam({
+      name: 'id',
+      description: 'ID do post',
+      example: '0d5c9b90-5e8a-4bb7-9f56-4a8da152a87d',
+    }),
+    ApiResponse({
+      status: 200,
+      description: 'Post excluído com sucesso',
+      type: PostResponseDto,
+    }),
+    ApiResponse({
+      status: 401,
+      description: 'Token de acesso inválido ou expirado',
+    }),
+    ApiResponse({
+      status: 403,
+      description: 'Sem permissão para excluir este post',
+    }),
+    ApiResponse({
+      status: 404,
+      description: 'Post não encontrado',
     }),
   );
