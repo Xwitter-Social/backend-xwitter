@@ -84,4 +84,26 @@ export class PostRepository implements IPostRepository {
       },
     });
   }
+
+  async searchPosts(query: string): Promise<PostWithAuthorAndCounts[]> {
+    return this.prisma.post.findMany({
+      where: {
+        content: {
+          contains: query,
+          mode: 'insensitive',
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        author: { select: authorSelect },
+        _count: {
+          select: {
+            likes: true,
+            comments: true,
+          },
+        },
+      },
+      take: 50,
+    });
+  }
 }

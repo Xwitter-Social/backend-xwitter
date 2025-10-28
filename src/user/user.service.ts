@@ -11,9 +11,21 @@ import * as bcrypt from 'bcrypt';
 import { Prisma, User as UserModel } from '@prisma/client';
 import { CreateUserDto, UpdateUserDto } from './dto';
 
+export type SanitizedUser = Omit<UserModel, 'password'>;
+
 @Injectable()
 export class UserService {
   constructor(private readonly userRepo: IUserRepository) {}
+
+  private sanitizeUser(user: UserModel): SanitizedUser {
+    const { password: _password, ...safeUser } = user;
+    void _password;
+    return safeUser;
+  }
+
+  private sanitizeUsers(users: UserModel[]): SanitizedUser[] {
+    return users.map((user) => this.sanitizeUser(user));
+  }
 
   private validateEmail(email: string) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -36,7 +48,7 @@ export class UserService {
     }
   }
 
-  async createUser(createUserDto: CreateUserDto): Promise<UserModel> {
+  async createUser(createUserDto: CreateUserDto): Promise<SanitizedUser> {
     this.validateEmail(createUserDto.email);
     this.validatePassword(createUserDto.password);
     this.validateUsername(createUserDto.username);
@@ -60,30 +72,32 @@ export class UserService {
       bio: createUserDto.bio,
     };
 
-    return this.userRepo.create(userData);
+    const createdUser = await this.userRepo.create(userData);
+    return this.sanitizeUser(createdUser);
   }
 
-  async searchUsers(query: string): Promise<UserModel[]> {
+  async searchUsers(query: string): Promise<SanitizedUser[]> {
     if (!query || query.trim().length === 0) {
       return [];
     }
 
-    return await this.userRepo.searchUsers(query.trim());
+    const users = await this.userRepo.searchUsers(query.trim());
+    return this.sanitizeUsers(users);
   }
 
-  async getUserByIdentifier(identifier: string): Promise<UserModel> {
+  async getUserByIdentifier(identifier: string): Promise<SanitizedUser> {
     const whereClause = IdentifierUtil.classifyIdentifier(identifier);
 
     const user = await this.userRepo.findUnique(whereClause);
     if (!user) throw new NotFoundException('Usuário não encontrado.');
-    return user;
+    return this.sanitizeUser(user);
   }
 
   async updateUser(
     id: string,
     updateUserDto: UpdateUserDto,
     currentUserId: string,
-  ): Promise<UserModel> {
+  ): Promise<SanitizedUser> {
     // Verifica se o usuário existe
     const user = await this.userRepo.findUnique({ id });
     if (!user) throw new NotFoundException('Usuário não encontrado.');
@@ -136,10 +150,14 @@ export class UserService {
       updateData.password = await bcrypt.hash(updateUserDto.password, 10);
     }
 
-    return this.userRepo.update({ where: { id }, data: updateData });
+    const updatedUser = await this.userRepo.update({
+      where: { id },
+      data: updateData,
+    });
+    return this.sanitizeUser(updatedUser);
   }
 
-  async deleteUser(id: string, currentUserId: string): Promise<UserModel> {
+  async deleteUser(id: string, currentUserId: string): Promise<SanitizedUser> {
     // Verifica se o usuário existe
     const user = await this.userRepo.findUnique({ id });
     if (!user) throw new NotFoundException('Usuário não encontrado.');
@@ -150,7 +168,8 @@ export class UserService {
     }
 
     try {
-      return await this.userRepo.delete({ id });
+      const deletedUser = await this.userRepo.delete({ id });
+      return this.sanitizeUser(deletedUser);
     } catch {
       throw new NotFoundException('Usuário não encontrado.');
     }

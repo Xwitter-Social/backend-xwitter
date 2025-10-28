@@ -20,6 +20,7 @@ export class MockPostRepository implements IPostRepository {
   private posts: Post[] = [];
   private timelineStore: TimelineStore[] = [];
   private postDetailStore: PostDetailStore[] = [];
+  private searchStore: PostWithAuthorAndCounts[] = [];
   private idSequence = 1;
   private defaultDate = new Date('2025-01-01T00:00:00.000Z');
 
@@ -77,6 +78,22 @@ export class MockPostRepository implements IPostRepository {
     return Promise.resolve(stored ? stored.comments : []);
   }
 
+  searchPosts(query: string): Promise<PostWithAuthorAndCounts[]> {
+    const normalizedQuery = query.toLowerCase();
+
+    const matches = this.searchStore.filter((post) =>
+      post.content.toLowerCase().includes(normalizedQuery),
+    );
+
+    return Promise.resolve(
+      matches.map((post) => ({
+        ...post,
+        author: { ...post.author },
+        _count: { ...post._count },
+      })),
+    );
+  }
+
   seedPosts(posts: Post[]): void {
     this.posts = posts.map((post) => ({ ...post }));
   }
@@ -132,10 +149,19 @@ export class MockPostRepository implements IPostRepository {
     }
   }
 
+  seedPostSearch(posts: PostWithAuthorAndCounts[]): void {
+    this.searchStore = posts.map((post) => ({
+      ...post,
+      author: { ...post.author },
+      _count: { ...post._count },
+    }));
+  }
+
   clear(): void {
     this.posts = [];
     this.timelineStore = [];
     this.postDetailStore = [];
+    this.searchStore = [];
     this.idSequence = 1;
   }
 }

@@ -84,8 +84,7 @@ export class MockUserRepository implements IUserRepository {
     const result = this.users.filter(
       (user) =>
         user.username.toLowerCase().includes(query.toLowerCase()) ||
-        user.name.toLowerCase().includes(query.toLowerCase()) ||
-        (user.bio && user.bio.toLowerCase().includes(query.toLowerCase())),
+        user.name.toLowerCase().includes(query.toLowerCase()),
     );
 
     return Promise.resolve(result.slice(0, 50));

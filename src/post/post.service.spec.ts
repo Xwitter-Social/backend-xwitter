@@ -200,6 +200,67 @@ describe('PostService', () => {
     });
   });
 
+  describe('searchPosts', () => {
+    const searchablePosts = [
+      buildPostWithCounts({
+        id: 'post-201',
+        content: 'Atualização de produto lançada hoje',
+        createdAt: new Date('2025-03-10T08:00:00.000Z'),
+        likeCount: 10,
+        commentCount: 2,
+      }),
+      buildPostWithCounts({
+        id: 'post-202',
+        content: 'Reflexões sobre produtividade remota',
+        createdAt: new Date('2025-03-09T09:30:00.000Z'),
+        likeCount: 4,
+        commentCount: 1,
+      }),
+      buildPostWithCounts({
+        id: 'post-203',
+        content: 'Checklist para lançamento de produto',
+        createdAt: new Date('2025-03-08T18:45:00.000Z'),
+        likeCount: 7,
+        commentCount: 5,
+      }),
+    ];
+
+    beforeEach(() => {
+      repository.seedPostSearch(searchablePosts);
+    });
+
+    it('should return posts whose content contains the query fragment', async () => {
+      const result = await service.searchPosts('produto');
+
+      expect(result).toHaveLength(2);
+      expect(result[0]).toMatchObject({
+        id: 'post-201',
+        content: 'Atualização de produto lançada hoje',
+        likeCount: 10,
+        commentCount: 2,
+      });
+      expect(result[1]).toMatchObject({
+        id: 'post-203',
+        content: 'Checklist para lançamento de produto',
+      });
+    });
+
+    it('should trim query and ignore casing when searching', async () => {
+      const result = await service.searchPosts('   PRODutividade   ');
+
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('post-202');
+    });
+
+    test.each(['', '   '])(
+      'should return empty array when query is only whitespace: "%s"',
+      async (query) => {
+        const result = await service.searchPosts(query);
+        expect(result).toEqual([]);
+      },
+    );
+  });
+
   describe('getPostDetails', () => {
     it('should return post details with comment tree', async () => {
       const postId = 'post-42';

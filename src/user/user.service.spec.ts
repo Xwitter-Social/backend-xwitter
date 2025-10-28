@@ -106,12 +106,9 @@ describe('UserService', () => {
 
       expect(result).toBeDefined();
       expectedFields.forEach((field) => {
-        if (field === 'password') {
-          expect(result[field]).toBe('hashedPassword123');
-        } else {
-          expect(result[field]).toBe(userData[field]);
-        }
+        expect(result[field]).toBe(userData[field]);
       });
+      expect('password' in result).toBe(false);
       expect(bcrypt.hash).toHaveBeenCalledWith(userData.password, 10);
     });
 
@@ -253,6 +250,7 @@ describe('UserService', () => {
         expect(result.name).toBeDefined();
         expect(result.createdAt).toBeDefined();
         expect(result.updatedAt).toBeDefined();
+        expect('password' in result).toBe(false);
       },
     );
 
@@ -394,13 +392,15 @@ describe('UserService', () => {
 
         // Verificar campos alterados
         Object.entries(expectedChanges).forEach(([field, expectedValue]) => {
-          expect(result[field]).toBe(expectedValue);
+          expect(result[field as keyof typeof result]).toBe(expectedValue);
         });
 
         // Verificar campos não alterados
         unchangedFields.forEach((field) => {
-          if (originalUser[field] !== undefined) {
-            expect(result[field]).toBe(originalUser[field]);
+          const originalValue =
+            originalUser[field as keyof typeof originalUser];
+          if (originalValue !== undefined) {
+            expect(result[field as keyof typeof result]).toBe(originalValue);
           }
         });
 
@@ -611,22 +611,10 @@ describe('UserService', () => {
       },
       {
         description: 'should return multiple users with common character',
-        query: 'o', // Matches john_doe, jane_smith, bob_jones, alice_johnson
-        expectedLength: 4,
-        expectedUsernames: [
-          'john_doe',
-          'jane_smith',
-          'bob_jones',
-          'alice_johnson',
-        ],
+        query: 'o', // Matches john_doe, bob_jones, alice_johnson
+        expectedLength: 3,
+        expectedUsernames: ['john_doe', 'bob_jones', 'alice_johnson'],
         searchType: 'multiple character match',
-      },
-      {
-        description: 'should return users matching by bio content',
-        query: 'developer',
-        expectedLength: 1,
-        expectedUsernames: ['john_doe'],
-        searchType: 'bio content match',
       },
       {
         description: 'should return users with exact username match',
@@ -664,6 +652,7 @@ describe('UserService', () => {
         expect(user).toHaveProperty('name');
         expect(user).toHaveProperty('createdAt');
         expect(user).toHaveProperty('updatedAt');
+        expect(user).not.toHaveProperty('password');
       });
     });
 
@@ -698,6 +687,7 @@ describe('UserService', () => {
       const result = await service.searchUsers(query);
       expect(result).toEqual([]);
       expect(result).toHaveLength(0);
+      expect(result.every((user) => !('password' in user))).toBe(true);
     });
 
     // Testes parametrizados para validação de entrada
@@ -723,6 +713,7 @@ describe('UserService', () => {
     ])('$description', async ({ query, expectedLength }) => {
       const result = await service.searchUsers(query);
       expect(result).toHaveLength(expectedLength);
+      expect(result.every((user) => !('password' in user))).toBe(true);
     });
   });
 });

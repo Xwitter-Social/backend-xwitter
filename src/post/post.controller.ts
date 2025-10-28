@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   Post as PostMethod,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
@@ -21,6 +22,7 @@ import {
   ApiDeletePost,
   ApiGetPostDetails,
   ApiGetTimeline,
+  ApiSearchPosts,
 } from '../common/decorators/swagger.decorators';
 
 @ApiTags('posts')
@@ -45,6 +47,15 @@ export class PostController {
     @CurrentUser() currentUser: CurrentUserData,
   ): Promise<TimelinePostDto[]> {
     return this.postService.getTimeline(currentUser.sub);
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('search')
+  @ApiSearchPosts()
+  async searchPosts(
+    @Query('search') query: string,
+  ): Promise<TimelinePostDto[]> {
+    return this.postService.searchPosts(query);
   }
 
   @UseGuards(AuthGuard)

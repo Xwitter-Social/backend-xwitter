@@ -39,4 +39,5 @@ export abstract class IPostRepository {
     postId: string,
   ): Promise<PostWithAuthorAndCounts | null>;
   abstract getCommentsByPostId(postId: string): Promise<CommentWithAuthor[]>;
+  abstract searchPosts(query: string): Promise<PostWithAuthorAndCounts[]>;
 }

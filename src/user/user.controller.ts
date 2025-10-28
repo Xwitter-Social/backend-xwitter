@@ -11,7 +11,6 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { UserService } from './user.service';
-import { User as UserModel } from '@prisma/client';
 import { AuthGuard } from 'src/auth/auth.guard';
 import {
   CurrentUser,
@@ -26,6 +25,7 @@ import {
   ApiUpdateUser,
   ApiDeleteUser,
 } from '../common/decorators/swagger.decorators';
+import { SanitizedUser } from './user.service';
 
 @ApiTags('users')
 @Controller('user')
@@ -34,7 +34,9 @@ export class UserController {
 
   @Post()
   @ApiCreateUser()
-  async createUser(@Body() createUserDto: CreateUserDto): Promise<UserModel> {
+  async createUser(
+    @Body() createUserDto: CreateUserDto,
+  ): Promise<SanitizedUser> {
     return this.userService.createUser(createUserDto);
   }
 
@@ -43,21 +45,23 @@ export class UserController {
   @ApiGetCurrentUser()
   async getCurrentUser(
     @CurrentUser() currentUser: CurrentUserData,
-  ): Promise<UserModel> {
+  ): Promise<SanitizedUser> {
     return this.userService.getUserByIdentifier(currentUser.sub);
   }
 
   @UseGuards(AuthGuard)
   @Get('search')
   @ApiGetAllUsers()
-  async searchUsers(@Query('search') query: string): Promise<UserModel[]> {
+  async searchUsers(@Query('search') query: string): Promise<SanitizedUser[]> {
     return await this.userService.searchUsers(query);
   }
 
   @UseGuards(AuthGuard)
   @Get(':identifier')
   @ApiGetUser()
-  async getUser(@Param('identifier') identifier: string): Promise<UserModel> {
+  async getUser(
+    @Param('identifier') identifier: string,
+  ): Promise<SanitizedUser> {
     return this.userService.getUserByIdentifier(identifier);
   }
 
@@ -68,7 +72,7 @@ export class UserController {
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserDto,
     @CurrentUser() currentUser: CurrentUserData,
-  ): Promise<UserModel> {
+  ): Promise<SanitizedUser> {
     return this.userService.updateUser(id, updateUserDto, currentUser.sub);
   }
 
@@ -78,7 +82,7 @@ export class UserController {
   async deleteUser(
     @Param('id') id: string,
     @CurrentUser() currentUser: CurrentUserData,
-  ): Promise<UserModel> {
+  ): Promise<SanitizedUser> {
     return this.userService.deleteUser(id, currentUser.sub);
   }
 }

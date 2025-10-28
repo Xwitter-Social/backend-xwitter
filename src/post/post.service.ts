@@ -75,6 +75,17 @@ export class PostService {
     return posts.map((post) => this.mapPostToTimelineDto(post));
   }
 
+  async searchPosts(query: string): Promise<TimelinePostDto[]> {
+    if (!query || !query.trim()) {
+      return [];
+    }
+
+    const trimmedQuery = query.trim();
+    const posts = await this.postRepo.searchPosts(trimmedQuery);
+
+    return posts.map((post) => this.mapPostToTimelineDto(post));
+  }
+
   async getPostDetails(postId: string): Promise<PostDetailsDto> {
     const post = await this.postRepo.getPostWithAuthorAndCounts(postId);
 

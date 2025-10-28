@@ -67,7 +67,8 @@ export const ApiGetAllUsers = () =>
   applyDecorators(
     ApiOperation({
       summary: 'Listar usuários',
-      description: 'Busca usuários por termo de pesquisa - nome ou username',
+      description:
+        'Busca usuários cujo username ou nome contém o termo informado',
     }),
     ApiBearerAuth('JWT-auth'),
     ApiQuery({
@@ -247,6 +248,31 @@ export const ApiGetTimeline = () =>
     ApiResponse({
       status: 200,
       description: 'Lista de posts da timeline',
+      type: TimelinePostResponseDto,
+      isArray: true,
+    }),
+    ApiResponse({
+      status: 401,
+      description: 'Token de acesso inválido ou expirado',
+    }),
+  );
+
+export const ApiSearchPosts = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: 'Buscar posts',
+      description: 'Busca posts cujo conteúdo contém o termo informado',
+    }),
+    ApiBearerAuth('JWT-auth'),
+    ApiQuery({
+      name: 'search',
+      required: true,
+      description: 'Trecho a ser procurado no conteúdo dos posts',
+      example: 'lançamento',
+    }),
+    ApiResponse({
+      status: 200,
+      description: 'Lista de posts encontrados',
       type: TimelinePostResponseDto,
       isArray: true,
     }),
