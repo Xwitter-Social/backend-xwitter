@@ -30,6 +30,28 @@ export type CommentWithAuthor = Prisma.CommentGetPayload<{
   };
 }>;
 
+export type RepostWithPostAndCounts = Prisma.RepostGetPayload<{
+  include: {
+    post: {
+      include: {
+        author: {
+          select: {
+            id: true;
+            username: true;
+            name: true;
+          };
+        };
+        _count: {
+          select: {
+            likes: true;
+            comments: true;
+          };
+        };
+      };
+    };
+  };
+}>;
+
 export abstract class IPostRepository {
   abstract create(data: Prisma.PostCreateInput): Promise<Post>;
   abstract findById(postId: string): Promise<Post | null>;
@@ -40,4 +62,6 @@ export abstract class IPostRepository {
   ): Promise<PostWithAuthorAndCounts | null>;
   abstract getCommentsByPostId(postId: string): Promise<CommentWithAuthor[]>;
   abstract searchPosts(query: string): Promise<PostWithAuthorAndCounts[]>;
+  abstract getPostsByAuthor(userId: string): Promise<PostWithAuthorAndCounts[]>;
+  abstract getRepostsByUser(userId: string): Promise<RepostWithPostAndCounts[]>;
 }

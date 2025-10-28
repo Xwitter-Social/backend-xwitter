@@ -10,7 +10,12 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Post as PostModel } from '@prisma/client';
-import { PostService, PostDetailsDto, TimelinePostDto } from './post.service';
+import {
+  PostService,
+  PostDetailsDto,
+  TimelinePostDto,
+  RepostTimelineDto,
+} from './post.service';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { CreatePostDto } from './dto';
 import {
@@ -23,6 +28,8 @@ import {
   ApiGetPostDetails,
   ApiGetTimeline,
   ApiSearchPosts,
+  ApiGetUserPosts,
+  ApiGetUserReposts,
 } from '../common/decorators/swagger.decorators';
 
 @ApiTags('posts')
@@ -56,6 +63,24 @@ export class PostController {
     @Query('search') query: string,
   ): Promise<TimelinePostDto[]> {
     return this.postService.searchPosts(query);
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('user/:userId')
+  @ApiGetUserPosts()
+  async getPostsByUser(
+    @Param('userId') userId: string,
+  ): Promise<TimelinePostDto[]> {
+    return this.postService.getPostsByUser(userId);
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('user/:userId/reposts')
+  @ApiGetUserReposts()
+  async getRepostsByUser(
+    @Param('userId') userId: string,
+  ): Promise<RepostTimelineDto[]> {
+    return this.postService.getRepostsByUser(userId);
   }
 
   @UseGuards(AuthGuard)

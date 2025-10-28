@@ -13,6 +13,7 @@ import {
   PostDetailsResponseDto,
   PostResponseDto,
   TimelinePostResponseDto,
+  RepostTimelineResponseDto,
 } from '../../post/dto';
 import { SignInDto, AuthResponseDto } from '../../auth/dto';
 
@@ -254,6 +255,64 @@ export const ApiGetTimeline = () =>
     ApiResponse({
       status: 401,
       description: 'Token de acesso inválido ou expirado',
+    }),
+  );
+
+export const ApiGetUserPosts = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: 'Listar posts de um usuário',
+      description:
+        'Retorna posts criados por um usuário específico, do mais recente para o mais antigo',
+    }),
+    ApiBearerAuth('JWT-auth'),
+    ApiParam({
+      name: 'userId',
+      description: 'ID do usuário',
+      example: '0d5c9b90-5e8a-4bb7-9f56-4a8da152a87d',
+    }),
+    ApiResponse({
+      status: 200,
+      description: 'Lista de posts de autoria do usuário',
+      type: TimelinePostResponseDto,
+      isArray: true,
+    }),
+    ApiResponse({
+      status: 401,
+      description: 'Token de acesso inválido ou expirado',
+    }),
+    ApiResponse({
+      status: 404,
+      description: 'Usuário não encontrado',
+    }),
+  );
+
+export const ApiGetUserReposts = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: 'Listar reposts de um usuário',
+      description:
+        'Retorna posts que o usuário repostou, ordenados pela data em que o repost foi realizado',
+    }),
+    ApiBearerAuth('JWT-auth'),
+    ApiParam({
+      name: 'userId',
+      description: 'ID do usuário',
+      example: '0d5c9b90-5e8a-4bb7-9f56-4a8da152a87d',
+    }),
+    ApiResponse({
+      status: 200,
+      description: 'Lista de reposts do usuário',
+      type: RepostTimelineResponseDto,
+      isArray: true,
+    }),
+    ApiResponse({
+      status: 401,
+      description: 'Token de acesso inválido ou expirado',
+    }),
+    ApiResponse({
+      status: 404,
+      description: 'Usuário não encontrado',
     }),
   );
 

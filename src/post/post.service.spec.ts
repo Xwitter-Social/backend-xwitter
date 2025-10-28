@@ -9,8 +9,11 @@ import {
   CommentWithAuthor,
   IPostRepository,
   PostWithAuthorAndCounts,
+  RepostWithPostAndCounts,
 } from './interfaces/post-repository.interface';
 import { MockPostRepository } from './mocks/mock-post-repository';
+import { IUserRepository } from '../user/interfaces/user-repository.interface';
+import { Prisma, User } from '@prisma/client';
 
 const buildPostWithCounts = (params?: {
   id?: string;
@@ -84,12 +87,104 @@ const buildCommentWithAuthor = (params: {
   } as CommentWithAuthor;
 };
 
+const buildRepostWithPost = (params?: {
+  id?: string;
+  userId?: string;
+  createdAt?: Date;
+  post?: PostWithAuthorAndCounts;
+}): RepostWithPostAndCounts => {
+  const {
+    id = 'repost-1',
+    userId = 'user-1',
+    createdAt = new Date('2025-02-01T12:00:00.000Z'),
+    post = buildPostWithCounts(),
+  } = params || {};
+
+  return {
+    id,
+    userId,
+    postId: post.id,
+    createdAt,
+    post,
+  };
+};
+
+const buildUser = (overrides?: Partial<User>): User => ({
+  id: overrides?.id ?? 'user-1',
+  email: overrides?.email ?? 'user1@test.com',
+  username: overrides?.username ?? 'user1',
+  name: overrides?.name ?? 'User 1',
+  password: overrides?.password ?? 'hashedPassword123',
+  bio: overrides?.bio ?? null,
+  createdAt: overrides?.createdAt ?? new Date('2025-01-01T00:00:00.000Z'),
+  updatedAt: overrides?.updatedAt ?? new Date('2025-01-01T00:00:00.000Z'),
+});
+
+class UserRepositoryMock extends IUserRepository {
+  private users = new Map<string, User>();
+
+  create(_data: Prisma.UserCreateInput): Promise<User> {
+    void _data;
+    return Promise.reject(new Error('Method not implemented.'));
+  }
+
+  findUnique(where: Prisma.UserWhereUniqueInput): Promise<User | null> {
+    let user: User | undefined;
+
+    if (where.id) {
+      user = this.users.get(where.id);
+    } else if (where.email) {
+      user = Array.from(this.users.values()).find(
+        (candidate) => candidate.email === where.email,
+      );
+    } else if (where.username) {
+      user = Array.from(this.users.values()).find(
+        (candidate) => candidate.username === where.username,
+      );
+    }
+
+    if (!user) {
+      return Promise.resolve(null);
+    }
+
+    return Promise.resolve({ ...user });
+  }
+
+  update(_params: {
+    where: Prisma.UserWhereUniqueInput;
+    data: Prisma.UserUpdateInput;
+  }): Promise<User> {
+    void _params;
+    return Promise.reject(new Error('Method not implemented.'));
+  }
+
+  delete(_where: Prisma.UserWhereUniqueInput): Promise<User> {
+    void _where;
+    return Promise.reject(new Error('Method not implemented.'));
+  }
+
+  searchUsers(_query: string): Promise<User[]> {
+    void _query;
+    return Promise.resolve([]);
+  }
+
+  seed(users: User[]): void {
+    this.users = new Map(users.map((user) => [user.id, { ...user }]));
+  }
+
+  clear(): void {
+    this.users.clear();
+  }
+}
+
 describe('PostService', () => {
   let service: PostService;
   let repository: MockPostRepository;
+  let userRepository: UserRepositoryMock;
 
   beforeEach(async () => {
     repository = new MockPostRepository();
+    userRepository = new UserRepositoryMock();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -97,6 +192,10 @@ describe('PostService', () => {
         {
           provide: IPostRepository,
           useValue: repository,
+        },
+        {
+          provide: IUserRepository,
+          useValue: userRepository,
         },
       ],
     }).compile();
@@ -106,6 +205,7 @@ describe('PostService', () => {
 
   afterEach(() => {
     repository.clear();
+    userRepository.clear();
   });
 
   it('should be defined', () => {
@@ -259,6 +359,115 @@ describe('PostService', () => {
         expect(result).toEqual([]);
       },
     );
+  });
+
+  describe('getPostsByUser', () => {
+    const userId = 'user-42';
+
+    it('should return authored posts ordered by creation date descending', async () => {
+      userRepository.seed([buildUser({ id: userId, username: 'author42' })]);
+
+      const newerPost = buildPostWithCounts({
+        id: 'post-new',
+        authorId: userId,
+        createdAt: new Date('2025-04-01T12:00:00.000Z'),
+      });
+      const olderPost = buildPostWithCounts({
+        id: 'post-old',
+        authorId: userId,
+        createdAt: new Date('2025-03-01T12:00:00.000Z'),
+      });
+
+      repository.seedUserPosts(userId, [newerPost, olderPost]);
+
+      const result = await service.getPostsByUser(userId);
+
+      expect(result).toHaveLength(2);
+      expect(result[0]).toMatchObject({
+        id: 'post-new',
+        createdAt: newerPost.createdAt,
+      });
+      expect(result[1]).toMatchObject({
+        id: 'post-old',
+        createdAt: olderPost.createdAt,
+      });
+    });
+
+    it('should return empty array when user has no posts', async () => {
+      userRepository.seed([buildUser({ id: userId, username: 'author42' })]);
+
+      const result = await service.getPostsByUser(userId);
+
+      expect(result).toEqual([]);
+    });
+
+    it('should throw NotFoundException when user does not exist', async () => {
+      await expect(
+        service.getPostsByUser('unknown-user'),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+  });
+
+  describe('getRepostsByUser', () => {
+    const userId = 'user-84';
+
+    it('should return reposted posts with repostedAt timestamp', async () => {
+      userRepository.seed([buildUser({ id: userId, username: 'user84' })]);
+
+      const recentRepost = buildRepostWithPost({
+        id: 'repost-new',
+        userId,
+        createdAt: new Date('2025-05-10T10:00:00.000Z'),
+        post: buildPostWithCounts({
+          id: 'post-900',
+          authorId: 'author-900',
+          content: 'Post original 900',
+          createdAt: new Date('2025-03-01T08:00:00.000Z'),
+        }),
+      });
+
+      const olderRepost = buildRepostWithPost({
+        id: 'repost-old',
+        userId,
+        createdAt: new Date('2025-04-01T10:00:00.000Z'),
+        post: buildPostWithCounts({
+          id: 'post-800',
+          authorId: 'author-800',
+          content: 'Post original 800',
+          createdAt: new Date('2025-02-01T08:00:00.000Z'),
+        }),
+      });
+
+      repository.seedUserReposts(userId, [recentRepost, olderRepost]);
+
+      const result = await service.getRepostsByUser(userId);
+
+      expect(result).toHaveLength(2);
+      expect(result[0]).toMatchObject({
+        id: 'post-900',
+        repostedAt: recentRepost.createdAt,
+        content: 'Post original 900',
+      });
+      expect(result[0].author).toMatchObject({ id: 'author-900' });
+      expect(result[1]).toMatchObject({
+        id: 'post-800',
+        repostedAt: olderRepost.createdAt,
+      });
+    });
+
+    it('should return empty array when user has no reposts', async () => {
+      userRepository.seed([buildUser({ id: userId, username: 'user84' })]);
+
+      const result = await service.getRepostsByUser(userId);
+
+      expect(result).toEqual([]);
+    });
+
+    it('should throw NotFoundException when user does not exist', async () => {
+      await expect(
+        service.getRepostsByUser('unknown-user'),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
   });
 
   describe('getPostDetails', () => {

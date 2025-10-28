@@ -5,9 +5,10 @@ import { PostRepository } from './post.repository';
 import { DatabaseModule } from 'src/database/database.module';
 import { AuthModule } from 'src/auth/auth.module';
 import { IPostRepository } from './interfaces/post-repository.interface';
+import { UserModule } from 'src/user/user.module';
 
 @Module({
-  imports: [DatabaseModule, AuthModule],
+  imports: [DatabaseModule, AuthModule, UserModule],
   controllers: [PostController],
   providers: [
     PostService,

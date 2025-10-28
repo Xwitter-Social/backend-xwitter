@@ -5,6 +5,7 @@ import {
   CommentWithAuthor,
   IPostRepository,
   PostWithAuthorAndCounts,
+  RepostWithPostAndCounts,
 } from './interfaces/post-repository.interface';
 
 const authorSelect = {
@@ -104,6 +105,42 @@ export class PostRepository implements IPostRepository {
         },
       },
       take: 50,
+    });
+  }
+
+  async getPostsByAuthor(userId: string): Promise<PostWithAuthorAndCounts[]> {
+    return this.prisma.post.findMany({
+      where: { authorId: userId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        author: { select: authorSelect },
+        _count: {
+          select: {
+            likes: true,
+            comments: true,
+          },
+        },
+      },
+    });
+  }
+
+  async getRepostsByUser(userId: string): Promise<RepostWithPostAndCounts[]> {
+    return this.prisma.repost.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        post: {
+          include: {
+            author: { select: authorSelect },
+            _count: {
+              select: {
+                likes: true,
+                comments: true,
+              },
+            },
+          },
+        },
+      },
     });
   }
 }

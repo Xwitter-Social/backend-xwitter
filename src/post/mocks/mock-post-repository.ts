@@ -3,6 +3,7 @@ import {
   CommentWithAuthor,
   IPostRepository,
   PostWithAuthorAndCounts,
+  RepostWithPostAndCounts,
 } from '../interfaces/post-repository.interface';
 
 interface TimelineStore {
@@ -16,11 +17,23 @@ interface PostDetailStore {
   comments: CommentWithAuthor[];
 }
 
+interface UserPostsStore {
+  userId: string;
+  posts: PostWithAuthorAndCounts[];
+}
+
+interface UserRepostsStore {
+  userId: string;
+  reposts: RepostWithPostAndCounts[];
+}
+
 export class MockPostRepository implements IPostRepository {
   private posts: Post[] = [];
   private timelineStore: TimelineStore[] = [];
   private postDetailStore: PostDetailStore[] = [];
   private searchStore: PostWithAuthorAndCounts[] = [];
+  private userPostsStore: UserPostsStore[] = [];
+  private userRepostsStore: UserRepostsStore[] = [];
   private idSequence = 1;
   private defaultDate = new Date('2025-01-01T00:00:00.000Z');
 
@@ -94,6 +107,43 @@ export class MockPostRepository implements IPostRepository {
     );
   }
 
+  getPostsByAuthor(userId: string): Promise<PostWithAuthorAndCounts[]> {
+    const stored = this.userPostsStore.find((entry) => entry.userId === userId);
+
+    if (!stored) {
+      return Promise.resolve([]);
+    }
+
+    return Promise.resolve(
+      stored.posts.map((post) => ({
+        ...post,
+        author: { ...post.author },
+        _count: { ...post._count },
+      })),
+    );
+  }
+
+  getRepostsByUser(userId: string): Promise<RepostWithPostAndCounts[]> {
+    const stored = this.userRepostsStore.find(
+      (entry) => entry.userId === userId,
+    );
+
+    if (!stored) {
+      return Promise.resolve([]);
+    }
+
+    return Promise.resolve(
+      stored.reposts.map((repost) => ({
+        ...repost,
+        post: {
+          ...repost.post,
+          author: { ...repost.post.author },
+          _count: { ...repost.post._count },
+        },
+      })),
+    );
+  }
+
   seedPosts(posts: Post[]): void {
     this.posts = posts.map((post) => ({ ...post }));
   }
@@ -157,11 +207,62 @@ export class MockPostRepository implements IPostRepository {
     }));
   }
 
+  seedUserPosts(userId: string, posts: PostWithAuthorAndCounts[]): void {
+    const clonedPosts = posts.map((post) => ({
+      ...post,
+      author: { ...post.author },
+      _count: { ...post._count },
+    }));
+
+    const existingIndex = this.userPostsStore.findIndex(
+      (entry) => entry.userId === userId,
+    );
+
+    const entry: UserPostsStore = {
+      userId,
+      posts: clonedPosts,
+    };
+
+    if (existingIndex >= 0) {
+      this.userPostsStore[existingIndex] = entry;
+    } else {
+      this.userPostsStore.push(entry);
+    }
+  }
+
+  seedUserReposts(userId: string, reposts: RepostWithPostAndCounts[]): void {
+    const clonedReposts = reposts.map((repost) => ({
+      ...repost,
+      post: {
+        ...repost.post,
+        author: { ...repost.post.author },
+        _count: { ...repost.post._count },
+      },
+    }));
+
+    const existingIndex = this.userRepostsStore.findIndex(
+      (entry) => entry.userId === userId,
+    );
+
+    const entry: UserRepostsStore = {
+      userId,
+      reposts: clonedReposts,
+    };
+
+    if (existingIndex >= 0) {
+      this.userRepostsStore[existingIndex] = entry;
+    } else {
+      this.userRepostsStore.push(entry);
+    }
+  }
+
   clear(): void {
     this.posts = [];
     this.timelineStore = [];
     this.postDetailStore = [];
     this.searchStore = [];
+    this.userPostsStore = [];
+    this.userRepostsStore = [];
     this.idSequence = 1;
   }
 }

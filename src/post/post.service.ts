@@ -11,6 +11,7 @@ import {
   IPostRepository,
   PostWithAuthorAndCounts,
 } from './interfaces/post-repository.interface';
+import { IUserRepository } from '../user/interfaces/user-repository.interface';
 
 export interface PostAuthorSummary {
   id: string;
@@ -39,9 +40,16 @@ export interface PostDetailsDto extends TimelinePostDto {
   comments: CommentTreeNode[];
 }
 
+export interface RepostTimelineDto extends TimelinePostDto {
+  repostedAt: Date;
+}
+
 @Injectable()
 export class PostService {
-  constructor(private readonly postRepo: IPostRepository) {}
+  constructor(
+    private readonly postRepo: IPostRepository,
+    private readonly userRepo: IUserRepository,
+  ) {}
 
   async createPost(
     createPostDto: CreatePostDto,
@@ -73,6 +81,23 @@ export class PostService {
     const posts = await this.postRepo.getTimelinePosts(userId);
 
     return posts.map((post) => this.mapPostToTimelineDto(post));
+  }
+
+  async getPostsByUser(userId: string): Promise<TimelinePostDto[]> {
+    await this.ensureUserExists(userId);
+    const posts = await this.postRepo.getPostsByAuthor(userId);
+
+    return posts.map((post) => this.mapPostToTimelineDto(post));
+  }
+
+  async getRepostsByUser(userId: string): Promise<RepostTimelineDto[]> {
+    await this.ensureUserExists(userId);
+    const reposts = await this.postRepo.getRepostsByUser(userId);
+
+    return reposts.map((repost) => ({
+      repostedAt: repost.createdAt,
+      ...this.mapPostToTimelineDto(repost.post),
+    }));
   }
 
   async searchPosts(query: string): Promise<TimelinePostDto[]> {
@@ -127,6 +152,14 @@ export class PostService {
       likeCount: post._count.likes,
       commentCount: post._count.comments,
     };
+  }
+
+  private async ensureUserExists(userId: string): Promise<void> {
+    const user = await this.userRepo.findUnique({ id: userId });
+
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado.');
+    }
   }
 
   private buildCommentTree(comments: CommentWithAuthor[]): CommentTreeNode[] {
