@@ -13,7 +13,8 @@ import {
 } from './interfaces/post-repository.interface';
 import { MockPostRepository } from './mocks/mock-post-repository';
 import { IUserRepository } from '../user/interfaces/user-repository.interface';
-import { Prisma, User } from '@prisma/client';
+import { MockUserRepository } from '../user/mocks/mock-user-repository';
+import { User } from '@prisma/client';
 
 const buildPostWithCounts = (params?: {
   id?: string;
@@ -109,7 +110,7 @@ const buildRepostWithPost = (params?: {
   };
 };
 
-const buildUser = (overrides?: Partial<User>): User => ({
+const buildUser = (overrides?: Partial<User>): Partial<User> => ({
   id: overrides?.id ?? 'user-1',
   email: overrides?.email ?? 'user1@test.com',
   username: overrides?.username ?? 'user1',
@@ -120,71 +121,14 @@ const buildUser = (overrides?: Partial<User>): User => ({
   updatedAt: overrides?.updatedAt ?? new Date('2025-01-01T00:00:00.000Z'),
 });
 
-class UserRepositoryMock extends IUserRepository {
-  private users = new Map<string, User>();
-
-  create(_data: Prisma.UserCreateInput): Promise<User> {
-    void _data;
-    return Promise.reject(new Error('Method not implemented.'));
-  }
-
-  findUnique(where: Prisma.UserWhereUniqueInput): Promise<User | null> {
-    let user: User | undefined;
-
-    if (where.id) {
-      user = this.users.get(where.id);
-    } else if (where.email) {
-      user = Array.from(this.users.values()).find(
-        (candidate) => candidate.email === where.email,
-      );
-    } else if (where.username) {
-      user = Array.from(this.users.values()).find(
-        (candidate) => candidate.username === where.username,
-      );
-    }
-
-    if (!user) {
-      return Promise.resolve(null);
-    }
-
-    return Promise.resolve({ ...user });
-  }
-
-  update(_params: {
-    where: Prisma.UserWhereUniqueInput;
-    data: Prisma.UserUpdateInput;
-  }): Promise<User> {
-    void _params;
-    return Promise.reject(new Error('Method not implemented.'));
-  }
-
-  delete(_where: Prisma.UserWhereUniqueInput): Promise<User> {
-    void _where;
-    return Promise.reject(new Error('Method not implemented.'));
-  }
-
-  searchUsers(_query: string): Promise<User[]> {
-    void _query;
-    return Promise.resolve([]);
-  }
-
-  seed(users: User[]): void {
-    this.users = new Map(users.map((user) => [user.id, { ...user }]));
-  }
-
-  clear(): void {
-    this.users.clear();
-  }
-}
-
 describe('PostService', () => {
   let service: PostService;
   let repository: MockPostRepository;
-  let userRepository: UserRepositoryMock;
+  let userRepository: MockUserRepository;
 
   beforeEach(async () => {
     repository = new MockPostRepository();
-    userRepository = new UserRepositoryMock();
+    userRepository = new MockUserRepository();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [

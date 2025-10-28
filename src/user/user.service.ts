@@ -48,6 +48,12 @@ export class UserService {
     }
   }
 
+  private async ensureUserExists(id: string): Promise<UserModel> {
+    const user = await this.userRepo.findUnique({ id });
+    if (!user) throw new NotFoundException('Usuário não encontrado.');
+    return user;
+  }
+
   async createUser(createUserDto: CreateUserDto): Promise<SanitizedUser> {
     this.validateEmail(createUserDto.email);
     this.validatePassword(createUserDto.password);
@@ -83,6 +89,18 @@ export class UserService {
 
     const users = await this.userRepo.searchUsers(query.trim());
     return this.sanitizeUsers(users);
+  }
+
+  async getFollowers(userId: string): Promise<SanitizedUser[]> {
+    await this.ensureUserExists(userId);
+    const followers = await this.userRepo.findFollowers(userId);
+    return this.sanitizeUsers(followers);
+  }
+
+  async getFollowing(userId: string): Promise<SanitizedUser[]> {
+    await this.ensureUserExists(userId);
+    const following = await this.userRepo.findFollowing(userId);
+    return this.sanitizeUsers(following);
   }
 
   async getUserByIdentifier(identifier: string): Promise<SanitizedUser> {

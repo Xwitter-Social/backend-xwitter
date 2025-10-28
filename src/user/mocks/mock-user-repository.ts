@@ -4,6 +4,7 @@ import { IUserRepository } from '../interfaces/user-repository.interface';
 export class MockUserRepository implements IUserRepository {
   private users: User[] = [];
   private nextId = 1;
+  private follows: Array<{ followerId: string; followingId: string }> = [];
 
   create(data: Prisma.UserCreateInput): Promise<User> {
     const user: User = {
@@ -90,10 +91,41 @@ export class MockUserRepository implements IUserRepository {
     return Promise.resolve(result.slice(0, 50));
   }
 
+  findFollowers(userId: string): Promise<User[]> {
+    const followerIds = this.follows
+      .filter((follow) => follow.followingId === userId)
+      .map((follow) => follow.followerId);
+
+    const followers = followerIds
+      .map((id) => this.users.find((user) => user.id === id))
+      .filter((user): user is User => Boolean(user))
+      .map((user) => ({ ...user }));
+
+    followers.sort((a, b) => a.username.localeCompare(b.username));
+
+    return Promise.resolve(followers);
+  }
+
+  findFollowing(userId: string): Promise<User[]> {
+    const followingIds = this.follows
+      .filter((follow) => follow.followerId === userId)
+      .map((follow) => follow.followingId);
+
+    const following = followingIds
+      .map((id) => this.users.find((user) => user.id === id))
+      .filter((user): user is User => Boolean(user))
+      .map((user) => ({ ...user }));
+
+    following.sort((a, b) => a.username.localeCompare(b.username));
+
+    return Promise.resolve(following);
+  }
+
   // Métodos auxiliares para testes
   clear(): void {
     this.users = [];
     this.nextId = 1;
+    this.follows = [];
   }
 
   seed(users: Partial<User>[]): void {
@@ -116,5 +148,15 @@ export class MockUserRepository implements IUserRepository {
 
   getAll(): User[] {
     return [...this.users];
+  }
+
+  seedFollows(
+    follows: Array<{ followerId: string; followingId: string }>,
+  ): void {
+    this.follows = follows.map((follow) => ({ ...follow }));
+  }
+
+  addFollow(followerId: string, followingId: string): void {
+    this.follows.push({ followerId, followingId });
   }
 }

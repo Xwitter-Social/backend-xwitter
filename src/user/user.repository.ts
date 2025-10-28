@@ -58,4 +58,34 @@ export class UserRepository implements IUserRepository {
       ],
     });
   }
+
+  async findFollowers(userId: string): Promise<UserModel[]> {
+    return this.prisma.user.findMany({
+      where: {
+        following: {
+          some: {
+            followingId: userId,
+          },
+        },
+      },
+      orderBy: {
+        username: 'asc',
+      },
+    });
+  }
+
+  async findFollowing(userId: string): Promise<UserModel[]> {
+    return this.prisma.user.findMany({
+      where: {
+        followers: {
+          some: {
+            followerId: userId,
+          },
+        },
+      },
+      orderBy: {
+        username: 'asc',
+      },
+    });
+  }
 }

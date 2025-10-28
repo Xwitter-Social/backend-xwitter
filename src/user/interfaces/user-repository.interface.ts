@@ -9,4 +9,6 @@ export abstract class IUserRepository {
   }): Promise<User>;
   abstract delete(where: Prisma.UserWhereUniqueInput): Promise<User>;
   abstract searchUsers(query: string): Promise<User[]>;
+  abstract findFollowers(userId: string): Promise<User[]>;
+  abstract findFollowing(userId: string): Promise<User[]>;
 }

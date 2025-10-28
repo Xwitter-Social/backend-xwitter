@@ -129,6 +129,62 @@ export const ApiGetUser = () =>
     }),
   );
 
+export const ApiGetUserFollowers = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: 'Listar seguidores do usuário',
+      description: 'Retorna os usuários que seguem o usuário informado',
+    }),
+    ApiBearerAuth('JWT-auth'),
+    ApiParam({
+      name: 'id',
+      description: 'ID do usuário',
+      example: '0d5c9b90-5e8a-4bb7-9f56-4a8da152a87d',
+    }),
+    ApiResponse({
+      status: 200,
+      description: 'Lista de seguidores',
+      type: UserResponseDto,
+      isArray: true,
+    }),
+    ApiResponse({
+      status: 401,
+      description: 'Token de acesso inválido ou expirado',
+    }),
+    ApiResponse({
+      status: 404,
+      description: 'Usuário não encontrado',
+    }),
+  );
+
+export const ApiGetUserFollowing = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: 'Listar usuários seguidos',
+      description: 'Retorna os usuários que o usuário informado está seguindo',
+    }),
+    ApiBearerAuth('JWT-auth'),
+    ApiParam({
+      name: 'id',
+      description: 'ID do usuário',
+      example: '0d5c9b90-5e8a-4bb7-9f56-4a8da152a87d',
+    }),
+    ApiResponse({
+      status: 200,
+      description: 'Lista de usuários seguidos',
+      type: UserResponseDto,
+      isArray: true,
+    }),
+    ApiResponse({
+      status: 401,
+      description: 'Token de acesso inválido ou expirado',
+    }),
+    ApiResponse({
+      status: 404,
+      description: 'Usuário não encontrado',
+    }),
+  );
+
 export const ApiUpdateUser = () =>
   applyDecorators(
     ApiOperation({

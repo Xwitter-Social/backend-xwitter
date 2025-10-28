@@ -22,6 +22,8 @@ import {
   ApiGetAllUsers,
   ApiGetCurrentUser,
   ApiGetUser,
+  ApiGetUserFollowers,
+  ApiGetUserFollowing,
   ApiUpdateUser,
   ApiDeleteUser,
 } from '../common/decorators/swagger.decorators';
@@ -54,6 +56,20 @@ export class UserController {
   @ApiGetAllUsers()
   async searchUsers(@Query('search') query: string): Promise<SanitizedUser[]> {
     return await this.userService.searchUsers(query);
+  }
+
+  @UseGuards(AuthGuard)
+  @Get(':id/followers')
+  @ApiGetUserFollowers()
+  async getFollowers(@Param('id') id: string): Promise<SanitizedUser[]> {
+    return this.userService.getFollowers(id);
+  }
+
+  @UseGuards(AuthGuard)
+  @Get(':id/following')
+  @ApiGetUserFollowing()
+  async getFollowing(@Param('id') id: string): Promise<SanitizedUser[]> {
+    return this.userService.getFollowing(id);
   }
 
   @UseGuards(AuthGuard)
