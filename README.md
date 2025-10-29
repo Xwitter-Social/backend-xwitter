@@ -51,11 +51,20 @@ O diagrama lógico de dados representa os artefatos que constituem o banco de da
 
 Foram representados tanto o diagrama de classes da implementação do sistema dentro do NestJS quanto o relacionamento entre as entidades modeladas, no canto inferior direito.
 
+### Diagrama de Classes Geral do Xwitter (implementação + entidades)
 
-![Diagrama de Classes](assets/classes-xwitter.svg)
+
+[![Classes](assets/classes-xwitter.svg)](assets/classes-xwitter.png)
 
 
 [Ampliar.](assets/classes-xwitter.png)
+
+
+### Diagrama de Classes das Entidades do Xwitter
+
+![Entidades](assets/classes-xwitter-escopo.svg)
+
+[Ampliar.](assets/classes-xwitter-escopo.png)
 
 ---
 
