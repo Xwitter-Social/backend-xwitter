@@ -94,58 +94,87 @@ describe('InteractionService', () => {
       expect(stored).not.toBeNull();
     });
 
-    it('should throw BadRequestException when following itself', async () => {
-      const userId = 'user-123';
-      userRepo.seed([buildUser({ id: userId })]);
+    test.each([
+      {
+        description: 'should throw BadRequestException when following itself',
+        currentUserId: 'user-123',
+        targetUserId: 'user-123',
+        seed: () => {
+          userRepo.seed([buildUser({ id: 'user-123' })]);
+          return Promise.resolve();
+        },
+        expectedError: BadRequestException,
+      },
+      {
+        description:
+          'should throw NotFoundException when target user does not exist',
+        currentUserId: 'user-1',
+        targetUserId: 'missing-user',
+        seed: () => {
+          userRepo.seed([buildUser({ id: 'user-1' })]);
+          return Promise.resolve();
+        },
+        expectedError: NotFoundException,
+      },
+      {
+        description:
+          'should throw ConflictException when already following target user',
+        currentUserId: 'user-1',
+        targetUserId: 'user-2',
+        seed: async () => {
+          userRepo.seed([
+            buildUser({ id: 'user-1' }),
+            buildUser({ id: 'user-2' }),
+          ]);
+          await interactionRepo.createFollow('user-1', 'user-2');
+        },
+        expectedError: ConflictException,
+      },
+    ])(
+      '$description',
+      async ({ currentUserId, targetUserId, seed, expectedError }) => {
+        await seed();
 
-      await expect(service.followUser(userId, userId)).rejects.toBeInstanceOf(
-        BadRequestException,
-      );
-    });
-
-    it('should throw NotFoundException when target user does not exist', async () => {
-      const currentUserId = 'user-1';
-      userRepo.seed([buildUser({ id: currentUserId })]);
-
-      await expect(
-        service.followUser(currentUserId, 'missing-user'),
-      ).rejects.toBeInstanceOf(NotFoundException);
-    });
-
-    it('should throw ConflictException when already following target user', async () => {
-      const currentUserId = 'user-1';
-      const targetUserId = 'user-2';
-
-      userRepo.seed([
-        buildUser({ id: currentUserId }),
-        buildUser({ id: targetUserId }),
-      ]);
-
-      await interactionRepo.createFollow(currentUserId, targetUserId);
-
-      await expect(
-        service.followUser(currentUserId, targetUserId),
-      ).rejects.toBeInstanceOf(ConflictException);
-    });
+        await expect(
+          service.followUser(currentUserId, targetUserId),
+        ).rejects.toBeInstanceOf(expectedError);
+      },
+    );
   });
 
   describe('unfollowUser', () => {
-    it('should remove follow relation when it exists', async () => {
-      const followerId = 'user-1';
-      const followingId = 'user-2';
-
-      await interactionRepo.createFollow(followerId, followingId);
-
-      await service.unfollowUser(followerId, followingId);
-
-      const stored = await interactionRepo.findFollow(followerId, followingId);
-      expect(stored).toBeNull();
-    });
-
-    it('should throw NotFoundException when follow relation does not exist', async () => {
-      await expect(
-        service.unfollowUser('user-1', 'user-2'),
-      ).rejects.toBeInstanceOf(NotFoundException);
+    test.each([
+      {
+        description: 'should remove follow relation when it exists',
+        followerId: 'user-1',
+        followingId: 'user-2',
+        setup: async () => {
+          await interactionRepo.createFollow('user-1', 'user-2');
+        },
+        assert: async (followerId: string, followingId: string) => {
+          await service.unfollowUser(followerId, followingId);
+          const stored = await interactionRepo.findFollow(
+            followerId,
+            followingId,
+          );
+          expect(stored).toBeNull();
+        },
+      },
+      {
+        description:
+          'should throw NotFoundException when follow relation does not exist',
+        followerId: 'user-1',
+        followingId: 'user-2',
+        setup: () => Promise.resolve(),
+        assert: async (followerId: string, followingId: string) => {
+          await expect(
+            service.unfollowUser(followerId, followingId),
+          ).rejects.toBeInstanceOf(NotFoundException);
+        },
+      },
+    ])('$description', async ({ followerId, followingId, setup, assert }) => {
+      await setup();
+      await assert(followerId, followingId);
     });
   });
 
@@ -166,19 +195,29 @@ describe('InteractionService', () => {
       expect(stored).not.toBeNull();
     });
 
-    it('should throw NotFoundException when post does not exist', async () => {
-      postRepo.clear();
+    test.each([
+      {
+        description: 'should throw NotFoundException when post does not exist',
+        setup: () => {
+          postRepo.clear();
+          return Promise.resolve();
+        },
+        likePostId: 'unknown-post',
+        expectedError: NotFoundException,
+      },
+      {
+        description: 'should throw ConflictException when like already exists',
+        setup: async () => {
+          await interactionRepo.createLike(userId, postId);
+        },
+        likePostId: postId,
+        expectedError: ConflictException,
+      },
+    ])('$description', async ({ setup, likePostId, expectedError }) => {
+      await setup();
 
-      await expect(
-        service.likePost(userId, 'unknown-post'),
-      ).rejects.toBeInstanceOf(NotFoundException);
-    });
-
-    it('should throw ConflictException when like already exists', async () => {
-      await interactionRepo.createLike(userId, postId);
-
-      await expect(service.likePost(userId, postId)).rejects.toBeInstanceOf(
-        ConflictException,
+      await expect(service.likePost(userId, likePostId)).rejects.toBeInstanceOf(
+        expectedError,
       );
     });
   });
@@ -187,19 +226,30 @@ describe('InteractionService', () => {
     const userId = 'user-unlike';
     const postId = 'post-unlike';
 
-    it('should remove like when it exists', async () => {
-      await interactionRepo.createLike(userId, postId);
-
-      await service.unlikePost(userId, postId);
-
-      const stored = await interactionRepo.findLike(userId, postId);
-      expect(stored).toBeNull();
-    });
-
-    it('should throw NotFoundException when like does not exist', async () => {
-      await expect(service.unlikePost(userId, postId)).rejects.toBeInstanceOf(
-        NotFoundException,
-      );
+    test.each([
+      {
+        description: 'should remove like when it exists',
+        setup: async () => {
+          await interactionRepo.createLike(userId, postId);
+        },
+        assert: async () => {
+          await service.unlikePost(userId, postId);
+          const stored = await interactionRepo.findLike(userId, postId);
+          expect(stored).toBeNull();
+        },
+      },
+      {
+        description: 'should throw NotFoundException when like does not exist',
+        setup: () => Promise.resolve(),
+        assert: async () => {
+          await expect(
+            service.unlikePost(userId, postId),
+          ).rejects.toBeInstanceOf(NotFoundException);
+        },
+      },
+    ])('$description', async ({ setup, assert }) => {
+      await setup();
+      await assert();
     });
   });
 
@@ -221,20 +271,31 @@ describe('InteractionService', () => {
       expect(result.createdAt).toBeInstanceOf(Date);
     });
 
-    it('should throw NotFoundException when post does not exist', async () => {
-      postRepo.clear();
+    test.each([
+      {
+        description: 'should throw NotFoundException when post does not exist',
+        setup: () => {
+          postRepo.clear();
+          return Promise.resolve();
+        },
+        targetPostId: 'unknown-post',
+        expectedError: NotFoundException,
+      },
+      {
+        description:
+          'should throw ConflictException when repost already exists for user',
+        setup: async () => {
+          await interactionRepo.createRepost(userId, postId);
+        },
+        targetPostId: postId,
+        expectedError: ConflictException,
+      },
+    ])('$description', async ({ setup, targetPostId, expectedError }) => {
+      await setup();
 
       await expect(
-        service.createRepost(userId, 'unknown-post'),
-      ).rejects.toBeInstanceOf(NotFoundException);
-    });
-
-    it('should throw ConflictException when repost already exists for user', async () => {
-      await interactionRepo.createRepost(userId, postId);
-
-      await expect(service.createRepost(userId, postId)).rejects.toBeInstanceOf(
-        ConflictException,
-      );
+        service.createRepost(userId, targetPostId),
+      ).rejects.toBeInstanceOf(expectedError);
     });
   });
 
@@ -255,19 +316,34 @@ describe('InteractionService', () => {
       expect(stored).toBeNull();
     });
 
-    it('should throw NotFoundException when repost does not exist', async () => {
-      await expect(
-        service.deleteRepost('user-1', 'missing-repost'),
-      ).rejects.toBeInstanceOf(NotFoundException);
-    });
+    test.each([
+      {
+        description:
+          'should throw NotFoundException when repost does not exist',
+        currentUserId: 'user-1',
+        expectedError: NotFoundException,
+        resolveRepostId: () => Promise.resolve('missing-repost'),
+      },
+      {
+        description:
+          'should throw ForbiddenException when repost belongs to another user',
+        currentUserId: 'stranger',
+        expectedError: ForbiddenException,
+        resolveRepostId: async () => {
+          const repost = await interactionRepo.createRepost('owner', postId);
+          return repost.id;
+        },
+      },
+    ])(
+      '$description',
+      async ({ currentUserId, expectedError, resolveRepostId }) => {
+        const repostId = await resolveRepostId();
 
-    it('should throw ForbiddenException when repost belongs to another user', async () => {
-      const repost = await interactionRepo.createRepost('owner', postId);
-
-      await expect(
-        service.deleteRepost('stranger', repost.id),
-      ).rejects.toBeInstanceOf(ForbiddenException);
-    });
+        await expect(
+          service.deleteRepost(currentUserId, repostId),
+        ).rejects.toBeInstanceOf(expectedError);
+      },
+    );
   });
 
   describe('createComment', () => {
@@ -330,57 +406,73 @@ describe('InteractionService', () => {
       },
     );
 
-    it('should throw BadRequestException when content exceeds 280 characters', async () => {
-      const longContent = 'a'.repeat(281);
-
-      await expect(
-        service.createComment('author-1', { postId, content: longContent }),
-      ).rejects.toBeInstanceOf(BadRequestException);
-    });
-
-    it('should throw NotFoundException when post does not exist', async () => {
-      postRepo.clear();
-
-      await expect(
-        service.createComment('author-1', {
+    test.each([
+      {
+        description:
+          'should throw BadRequestException when content exceeds 280 characters',
+        setup: () => Promise.resolve(),
+        payload: {
+          postId,
+          content: 'a'.repeat(281),
+        },
+        expectedError: BadRequestException,
+      },
+      {
+        description: 'should throw NotFoundException when post does not exist',
+        setup: () => {
+          postRepo.clear();
+          return Promise.resolve();
+        },
+        payload: {
           postId: 'missing-post',
           content: 'Olá',
-        }),
-      ).rejects.toBeInstanceOf(NotFoundException);
-    });
-
-    it('should throw NotFoundException when parent comment is not found', async () => {
-      await expect(
-        service.createComment('author-1', {
+        },
+        expectedError: NotFoundException,
+      },
+      {
+        description:
+          'should throw NotFoundException when parent comment is not found',
+        setup: () => Promise.resolve(),
+        payload: {
           postId,
           content: 'Olá',
           parentCommentId: 'missing-parent',
-        }),
-      ).rejects.toBeInstanceOf(NotFoundException);
-    });
-
-    it('should throw BadRequestException when parent comment belongs to another post', async () => {
-      postRepo.seedPosts([
-        buildPost({ id: postId }),
-        buildPost({ id: 'other-post', authorId: 'author-2' }),
-      ]);
-
-      interactionRepo.seedComments([
-        {
-          id: 'comment-different-post',
-          postId: 'other-post',
-          authorId: 'user-x',
-          content: 'Comentário em outro post',
         },
-      ]);
+        expectedError: NotFoundException,
+      },
+      {
+        description:
+          'should throw BadRequestException when parent comment belongs to another post',
+        setup: () => {
+          postRepo.seedPosts([
+            buildPost({ id: postId }),
+            buildPost({ id: 'other-post', authorId: 'author-2' }),
+          ]);
 
-      await expect(
-        service.createComment('author-1', {
+          interactionRepo.seedComments([
+            {
+              id: 'comment-different-post',
+              postId: 'other-post',
+              authorId: 'user-x',
+              content: 'Comentário em outro post',
+            },
+          ]);
+
+          return Promise.resolve();
+        },
+        payload: {
           postId,
           content: 'Comentário que deveria falhar',
           parentCommentId: 'comment-different-post',
-        }),
-      ).rejects.toBeInstanceOf(BadRequestException);
+        },
+        expectedError: BadRequestException,
+      },
+    ])('$description', async ({ setup, payload, expectedError }) => {
+      await setup();
+
+      await expect(
+        service.createComment('author-1', payload),
+      ).rejects.toBeInstanceOf(expectedError);
     });
   });
 
@@ -403,25 +495,37 @@ describe('InteractionService', () => {
       expect(stored).toBeNull();
     });
 
-    it('should throw NotFoundException when comment does not exist', async () => {
-      await expect(
-        service.deleteComment('author-1', 'missing-comment'),
-      ).rejects.toBeInstanceOf(NotFoundException);
-    });
-
-    it('should throw ForbiddenException when comment belongs to another user', async () => {
-      interactionRepo.seedComments([
-        {
-          id: 'comment-1',
-          postId: 'post-comment',
-          authorId: 'other-user',
-          content: 'Comentário de outra pessoa',
+    test.each([
+      {
+        description:
+          'should throw NotFoundException when comment does not exist',
+        commentId: 'missing-comment',
+        setup: () => Promise.resolve(),
+        expectedError: NotFoundException,
+      },
+      {
+        description:
+          'should throw ForbiddenException when comment belongs to another user',
+        commentId: 'comment-1',
+        setup: () => {
+          interactionRepo.seedComments([
+            {
+              id: 'comment-1',
+              postId: 'post-comment',
+              authorId: 'other-user',
+              content: 'Comentário de outra pessoa',
+            },
+          ]);
+          return Promise.resolve();
         },
-      ]);
+        expectedError: ForbiddenException,
+      },
+    ])('$description', async ({ commentId, setup, expectedError }) => {
+      await setup();
 
       await expect(
-        service.deleteComment('author-1', 'comment-1'),
-      ).rejects.toBeInstanceOf(ForbiddenException);
+        service.deleteComment('author-1', commentId),
+      ).rejects.toBeInstanceOf(expectedError);
     });
   });
 });

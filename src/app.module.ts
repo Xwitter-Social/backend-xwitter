@@ -4,6 +4,7 @@ import { UserModule } from './user/user.module';
 import { DatabaseModule } from './database/database.module';
 import { PostModule } from './post/post.module';
 import { InteractionModule } from './interaction/interaction.module';
+import { ConversationModule } from './conversation/conversation.module';
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { InteractionModule } from './interaction/interaction.module';
     UserModule,
     PostModule,
     InteractionModule,
+    ConversationModule,
     DatabaseModule,
   ],
   controllers: [],

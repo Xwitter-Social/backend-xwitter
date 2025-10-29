@@ -22,6 +22,13 @@ import {
   MessageResponseDto,
   RepostResponseDto,
 } from '../../interaction/dto';
+import {
+  StartConversationDto,
+  ConversationDetailsDto,
+  ConversationSummaryDto,
+  ConversationMessageDto,
+  SendMessageDto,
+} from '../../conversation/dto';
 
 export const ApiSignIn = () =>
   applyDecorators(
@@ -704,5 +711,131 @@ export const ApiDeleteComment = () =>
     ApiResponse({
       status: 404,
       description: 'Comentário não encontrado',
+    }),
+  );
+
+export const ApiStartConversation = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: 'Iniciar ou recuperar conversa',
+      description:
+        'Inicia uma nova conversa privada com outro usuário ou retorna a existente.',
+    }),
+    ApiBearerAuth('JWT-auth'),
+    ApiBody({
+      type: StartConversationDto,
+      description:
+        'Identificador do usuário com quem a conversa deve ser iniciada',
+    }),
+    ApiResponse({
+      status: 201,
+      description: 'Conversa criada ou recuperada com sucesso',
+      type: ConversationDetailsDto,
+    }),
+    ApiResponse({
+      status: 400,
+      description:
+        'Tentativa de iniciar conversa consigo mesmo ou dados inválidos',
+    }),
+    ApiResponse({
+      status: 401,
+      description: 'Token de acesso inválido ou expirado',
+    }),
+    ApiResponse({
+      status: 404,
+      description: 'Usuário destinatário não encontrado',
+    }),
+  );
+
+export const ApiGetMyConversations = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: 'Listar conversas do usuário',
+      description:
+        'Retorna as conversas privadas do usuário autenticado, incluindo última mensagem.',
+    }),
+    ApiBearerAuth('JWT-auth'),
+    ApiResponse({
+      status: 200,
+      description: 'Lista de conversas recuperada com sucesso',
+      type: ConversationSummaryDto,
+      isArray: true,
+    }),
+    ApiResponse({
+      status: 401,
+      description: 'Token de acesso inválido ou expirado',
+    }),
+  );
+
+export const ApiGetConversationMessages = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: 'Listar mensagens da conversa',
+      description:
+        'Retorna todas as mensagens trocadas na conversa informada, ordenadas da mais antiga para a mais recente.',
+    }),
+    ApiBearerAuth('JWT-auth'),
+    ApiParam({
+      name: 'conversationId',
+      description: 'ID da conversa cujas mensagens serão listadas',
+      example: 'conversation-123',
+    }),
+    ApiResponse({
+      status: 200,
+      description: 'Mensagens recuperadas com sucesso',
+      type: ConversationMessageDto,
+      isArray: true,
+    }),
+    ApiResponse({
+      status: 401,
+      description: 'Token de acesso inválido ou expirado',
+    }),
+    ApiResponse({
+      status: 403,
+      description: 'Usuário não participa desta conversa',
+    }),
+    ApiResponse({
+      status: 404,
+      description: 'Conversa não encontrada',
+    }),
+  );
+
+export const ApiSendConversationMessage = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: 'Enviar mensagem em conversa',
+      description:
+        'Registra uma nova mensagem na conversa informada, desde que o usuário seja participante.',
+    }),
+    ApiBearerAuth('JWT-auth'),
+    ApiParam({
+      name: 'conversationId',
+      description: 'ID da conversa que receberá a mensagem',
+      example: 'conversation-123',
+    }),
+    ApiBody({
+      type: SendMessageDto,
+      description: 'Conteúdo da mensagem a ser enviada',
+    }),
+    ApiResponse({
+      status: 201,
+      description: 'Mensagem enviada com sucesso',
+      type: ConversationMessageDto,
+    }),
+    ApiResponse({
+      status: 400,
+      description: 'Conteúdo inválido para mensagem',
+    }),
+    ApiResponse({
+      status: 401,
+      description: 'Token de acesso inválido ou expirado',
+    }),
+    ApiResponse({
+      status: 403,
+      description: 'Usuário não participa desta conversa',
+    }),
+    ApiResponse({
+      status: 404,
+      description: 'Conversa não encontrada',
     }),
   );
