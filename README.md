@@ -62,7 +62,7 @@ Foram representados tanto o diagrama de classes da implementação do sistema de
 
 ### Diagrama de Classes das Entidades do Xwitter
 
-![Entidades](assets/classes-xwitter-escopo.svg)
+![Entidades](assets/classes-xwitter-escopo.png)
 
 [Ampliar.](assets/classes-xwitter-escopo.png)
 
