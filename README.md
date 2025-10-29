@@ -54,10 +54,10 @@ Foram representados tanto o diagrama de classes da implementação do sistema de
 ### Diagrama de Classes Geral do Xwitter (implementação + entidades)
 
 
-[![Classes](assets/classes-xwitter.svg)](assets/classes-xwitter.png)
+[![Classes](assets/classes-xwitter.svg)](assets/classes-implementacao.png)
 
 
-[Ampliar.](assets/classes-xwitter.png)
+[Ampliar.](assets/classes-implementacao.png)
 
 
 ### Diagrama de Classes das Entidades do Xwitter
