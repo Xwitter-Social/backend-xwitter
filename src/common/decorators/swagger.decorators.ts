@@ -16,6 +16,12 @@ import {
   RepostTimelineResponseDto,
 } from '../../post/dto';
 import { SignInDto, AuthResponseDto } from '../../auth/dto';
+import {
+  CreateCommentDto,
+  CommentResponseDto,
+  MessageResponseDto,
+  RepostResponseDto,
+} from '../../interaction/dto';
 
 export const ApiSignIn = () =>
   applyDecorators(
@@ -453,5 +459,250 @@ export const ApiDeletePost = () =>
     ApiResponse({
       status: 404,
       description: 'Post não encontrado',
+    }),
+  );
+
+export const ApiFollowUser = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: 'Seguir usuário',
+      description:
+        'Permite que o usuário autenticado siga outro usuário informado pelo ID.',
+    }),
+    ApiBearerAuth('JWT-auth'),
+    ApiParam({
+      name: 'targetUserId',
+      description: 'ID do usuário que será seguido',
+      example: '0d5c9b90-5e8a-4bb7-9f56-4a8da152a87d',
+    }),
+    ApiResponse({
+      status: 201,
+      description: 'Usuário seguido com sucesso',
+      type: MessageResponseDto,
+    }),
+    ApiResponse({
+      status: 400,
+      description: 'Tentativa de seguir a si mesmo',
+    }),
+    ApiResponse({
+      status: 401,
+      description: 'Token de acesso inválido ou expirado',
+    }),
+    ApiResponse({
+      status: 404,
+      description: 'Usuário alvo não encontrado',
+    }),
+    ApiResponse({
+      status: 409,
+      description: 'Usuário já seguido anteriormente',
+    }),
+  );
+
+export const ApiUnfollowUser = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: 'Deixar de seguir usuário',
+      description:
+        'Remove a relação de follow entre o usuário autenticado e o usuário informado.',
+    }),
+    ApiBearerAuth('JWT-auth'),
+    ApiParam({
+      name: 'targetUserId',
+      description: 'ID do usuário que deixará de ser seguido',
+      example: '0d5c9b90-5e8a-4bb7-9f56-4a8da152a87d',
+    }),
+    ApiResponse({
+      status: 204,
+      description: 'Relação de follow removida com sucesso',
+    }),
+    ApiResponse({
+      status: 401,
+      description: 'Token de acesso inválido ou expirado',
+    }),
+    ApiResponse({
+      status: 404,
+      description: 'Relação de follow não encontrada',
+    }),
+  );
+
+export const ApiLikePost = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: 'Curtir post',
+      description: 'Registra uma curtida do usuário autenticado em um post.',
+    }),
+    ApiBearerAuth('JWT-auth'),
+    ApiParam({
+      name: 'postId',
+      description: 'ID do post que receberá a curtida',
+      example: '0d5c9b90-5e8a-4bb7-9f56-4a8da152a87d',
+    }),
+    ApiResponse({
+      status: 201,
+      description: 'Post curtido com sucesso',
+      type: MessageResponseDto,
+    }),
+    ApiResponse({
+      status: 401,
+      description: 'Token de acesso inválido ou expirado',
+    }),
+    ApiResponse({
+      status: 404,
+      description: 'Post não encontrado',
+    }),
+    ApiResponse({
+      status: 409,
+      description: 'Post já foi curtido anteriormente',
+    }),
+  );
+
+export const ApiUnlikePost = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: 'Remover curtida de post',
+      description:
+        'Remove a curtida do usuário autenticado em relação ao post informado.',
+    }),
+    ApiBearerAuth('JWT-auth'),
+    ApiParam({
+      name: 'postId',
+      description: 'ID do post cuja curtida será removida',
+      example: '0d5c9b90-5e8a-4bb7-9f56-4a8da152a87d',
+    }),
+    ApiResponse({
+      status: 204,
+      description: 'Curtida removida com sucesso',
+    }),
+    ApiResponse({
+      status: 401,
+      description: 'Token de acesso inválido ou expirado',
+    }),
+    ApiResponse({
+      status: 404,
+      description: 'Curtida não encontrada',
+    }),
+  );
+
+export const ApiCreateRepost = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: 'Criar repost',
+      description:
+        'Cria um repost do conteúdo indicado para o usuário autenticado.',
+    }),
+    ApiBearerAuth('JWT-auth'),
+    ApiParam({
+      name: 'postId',
+      description: 'ID do post que será repostado',
+      example: '0d5c9b90-5e8a-4bb7-9f56-4a8da152a87d',
+    }),
+    ApiResponse({
+      status: 201,
+      description: 'Repost criado com sucesso',
+      type: RepostResponseDto,
+    }),
+    ApiResponse({
+      status: 401,
+      description: 'Token de acesso inválido ou expirado',
+    }),
+    ApiResponse({
+      status: 404,
+      description: 'Post não encontrado',
+    }),
+    ApiResponse({
+      status: 409,
+      description: 'Repost já existente para este usuário',
+    }),
+  );
+
+export const ApiDeleteRepost = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: 'Excluir repost',
+      description: 'Remove um repost criado pelo usuário autenticado.',
+    }),
+    ApiBearerAuth('JWT-auth'),
+    ApiParam({
+      name: 'repostId',
+      description: 'ID do repost que será removido',
+      example: '9f8e7d6c-5b4a-3f2e-1d0c-abcdef123456',
+    }),
+    ApiResponse({
+      status: 204,
+      description: 'Repost removido com sucesso',
+    }),
+    ApiResponse({
+      status: 401,
+      description: 'Token de acesso inválido ou expirado',
+    }),
+    ApiResponse({
+      status: 403,
+      description: 'Usuário não possui permissão para remover este repost',
+    }),
+    ApiResponse({
+      status: 404,
+      description: 'Repost não encontrado',
+    }),
+  );
+
+export const ApiCreateComment = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: 'Criar comentário',
+      description:
+        'Adiciona um comentário a um post, permitindo respostas encadeadas.',
+    }),
+    ApiBearerAuth('JWT-auth'),
+    ApiBody({
+      type: CreateCommentDto,
+      description: 'Dados necessários para criar o comentário',
+    }),
+    ApiResponse({
+      status: 201,
+      description: 'Comentário criado com sucesso',
+      type: CommentResponseDto,
+    }),
+    ApiResponse({
+      status: 400,
+      description:
+        'Conteúdo inválido ou comentário pai pertencente a outro post',
+    }),
+    ApiResponse({
+      status: 401,
+      description: 'Token de acesso inválido ou expirado',
+    }),
+    ApiResponse({
+      status: 404,
+      description: 'Post ou comentário pai não encontrado',
+    }),
+  );
+
+export const ApiDeleteComment = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: 'Excluir comentário',
+      description: 'Remove um comentário criado pelo usuário autenticado.',
+    }),
+    ApiBearerAuth('JWT-auth'),
+    ApiParam({
+      name: 'commentId',
+      description: 'ID do comentário que será excluído',
+      example: '5a7c9a12-3b45-4f62-9d1b-12ef567890ab',
+    }),
+    ApiResponse({
+      status: 204,
+      description: 'Comentário removido com sucesso',
+    }),
+    ApiResponse({
+      status: 401,
+      description: 'Token de acesso inválido ou expirado',
+    }),
+    ApiResponse({
+      status: 403,
+      description: 'Usuário não possui permissão para excluir este comentário',
+    }),
+    ApiResponse({
+      status: 404,
+      description: 'Comentário não encontrado',
     }),
   );

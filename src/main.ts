@@ -12,6 +12,10 @@ async function bootstrap() {
     .setVersion('1.0')
     .addTag('auth', 'Autenticação de usuários')
     .addTag('users', 'Gerenciamento de usuários')
+    .addTag(
+      'interaction',
+      'Interações sociais: follow, like, repost e comentários',
+    )
     .addBearerAuth(
       {
         type: 'http',
