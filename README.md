@@ -139,29 +139,38 @@ cd backend-xwitter
 # 2. Configure as variáveis de ambiente
 cp .env.example .env
 
-# 3. Execute o projeto (primeira vez)
+# 2.1 Configure as variáveis de ambiente para testes de integração
+cp .env.test.example .env.test
+# ajuste o arquivo .env.test com a variável TEST_DATABASE_URL apontando para um banco isolado (ex.: localhost)
+
+# 3. Execute o projeto (primeira vez) - Os testes de integração e unitários serão executados automaticamente
 docker-compose up --build
 
 # 4. (Opcional) Execute os testes de forma visível
 docker-compose up --build tests
+
 ```
 
-### ✨ O que acontece automaticamente:
-
-1. 🏗️ **Builds da imagem Docker** com todas as dependências
-2. 🗄️ **Inicia o PostgreSQL** com configurações otimizadas
-3. ⏳ **Aguarda o banco estar disponível** (healthcheck automático)
-4. 🔄 **Executa as migrações** automaticamente (via `prisma migrate deploy`)
-5. ⚙️ **Gera o cliente Prisma** atualizado
-6. 🎯 **Inicia a aplicação** em modo de desenvolvimento com hot-reload
-
-### 🌐 Acesso
+> 💡 **Usando Docker?** O serviço `tests` do `docker-compose` já utiliza `npm run test`, garantindo a execução de testes unitários e de integração sempre que o ambiente de testes for iniciado.
 
 Após a inicialização, a aplicação estará disponível em:
 
 - **API**: http://localhost:3001
 - **Documentação (Swagger)**: http://localhost:3001/docs
 - **Banco de dados**: localhost:5432
+
+### 🧪 Banco para Testes de Integração
+
+Os testes de integração executam contra um banco PostgreSQL real. Garanta que o arquivo `.env.test` (criado a partir do `.env.test.example`) esteja presente com a variável `TEST_DATABASE_URL` apontando para um banco isolado. Para execução **local**, aponte essa URL para `localhost`. Ao rodar via `docker compose`, esse valor é sobrescrito automaticamente para utilizar o hostname interno `db`, então não é necessário modificar o arquivo dentro do container.
+
+Se estiver usando o banco provisionado pelo `docker compose`, garanta que o serviço `db` esteja no ar:
+
+```bash
+docker compose up -d db
+
+```
+
+> ✅ A URL usada nos testes é passada automaticamente para o Prisma. O script de `globalSetup` executa `prisma migrate deploy` e limpa as tabelas antes da suíte iniciar.
 
 ### 🔄 Execuções Subsequentes
 
@@ -253,18 +262,18 @@ git commit -m "feat: adiciona nova tabela X"
 
 ### 🧪 Executando Testes
 
+Os testes são divididos em **unitários** e **de integração**. Ambos são executados automaticamente ao subir o ambiente via Docker Compose.
+
 ```bash
-# Rodar os testes em um serviço dedicado
+# Rodar os testes (unitários + integração) em um serviço dedicado
 docker-compose up tests
 
-# Testes unitários
-docker-compose exec backend npm run test
+# Ou rodar os testes localmente (fora do Docker)
+npm run test
 
-# Testes com coverage
-docker-compose exec backend npm run test:cov
+npm run test:unit       # Apenas testes unitários
 
-# Testes e2e
-docker-compose exec backend npm run test:e2e
+npm run test:integration # Apenas testes de integração
 ```
 
 ### 📋 Padrões de Commit
@@ -344,16 +353,35 @@ docker system prune -a
 ## 📚 Estrutura Atual do Projeto
 
 ```
-├── prisma/                    # Schema e migrações do banco
-├── src/
-│   ├── auth/                  # Módulo de autenticação
-│   ├── user/                  # Módulo de usuários
-│   ├── common/                # DTOs, decorators e utils compartilhados
-│   └── database/              # Configuração do Prisma
-├── scripts/                   # Scripts Docker e utilidades
+├── Dockerfile
+├── README.md
+├── assets/                    # Logos, diagramas e materiais visuais
+├── coverage/                  # Relatórios de cobertura gerados pelo Jest
 ├── docker-compose.yml         # Orquestração dos containers
-├── Dockerfile                 # Imagem da aplicação
-└── README.md                  # Este arquivo
+├── generated/                 # Prisma Client gerado automaticamente
+├── package.json
+├── prisma/                    # Schema, migrations e seed do banco
+│   ├── migrations/
+│   ├── schema.prisma
+│   └── seed.ts
+├── scripts/                   # Scripts utilitários (ex.: entrypoint Docker)
+├── src/
+│   ├── app.module.ts          # Módulo raiz do NestJS
+│   ├── main.ts                # Bootstrap da aplicação
+│   ├── auth/                  # Autenticação (controllers, service, guard)
+│   ├── common/                # Decorators e utilidades compartilhadas
+│   ├── conversation/          # Conversas e mensagens privadas
+│   ├── database/              # PrismaService e módulo de banco de dados
+│   ├── interaction/           # Likes, follows, reposts e comentários
+│   ├── post/                  # Publicações e timeline
+│   └── user/                  # Usuários (perfil, busca, seguidores)
+├── test/
+│   ├── integration/           # Testes de integração por serviço
+│   │   ├── utils/             # Prisma client compartilhado e fábricas
+│   │   └── *.int-spec.ts
+│   └── jest-e2e.json          # Configuração de testes e2e (placeholder)
+├── tsconfig.json              # Configuração TypeScript
+└── tsconfig.build.json        # Configuração para build NestJS
 ```
 
 ---
