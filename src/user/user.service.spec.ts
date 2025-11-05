@@ -41,9 +41,14 @@ describe('UserService', () => {
     jest.clearAllMocks();
   });
 
-  it('should be defined', () => {
-    expect(service).toBeDefined();
-  });
+  test.each([
+    {
+      description: 'should be defined',
+      execute: () => {
+        expect(service).toBeDefined();
+      },
+    },
+  ])('$description', ({ execute }) => execute());
 
   describe('createUser', () => {
     // Testes parametrizados para criação bem-sucedida
@@ -565,49 +570,58 @@ describe('UserService', () => {
       name: 'Target User',
     };
 
-    it('should return sanitized followers ordered by username', async () => {
-      mockUserRepository.seed([
-        targetUser,
-        {
-          id: 'follower-2',
-          username: 'carla',
-          email: 'carla@test.com',
-          name: 'Carla Follower',
+    test.each([
+      {
+        description: 'should return sanitized followers ordered by username',
+        execute: async () => {
+          mockUserRepository.seed([
+            targetUser,
+            {
+              id: 'follower-2',
+              username: 'carla',
+              email: 'carla@test.com',
+              name: 'Carla Follower',
+            },
+            {
+              id: 'follower-1',
+              username: 'ana',
+              email: 'ana@test.com',
+              name: 'Ana Follower',
+            },
+          ]);
+
+          mockUserRepository.seedFollows([
+            { followerId: 'follower-1', followingId: targetUser.id },
+            { followerId: 'follower-2', followingId: targetUser.id },
+          ]);
+
+          const result = await service.getFollowers(targetUser.id);
+
+          expect(result).toHaveLength(2);
+          expect(result.map((user) => user.username)).toEqual(['ana', 'carla']);
+          expect(result.every((user) => !('password' in user))).toBe(true);
         },
-        {
-          id: 'follower-1',
-          username: 'ana',
-          email: 'ana@test.com',
-          name: 'Ana Follower',
+      },
+      {
+        description: 'should return empty array when user has no followers',
+        execute: async () => {
+          mockUserRepository.seed([targetUser]);
+          mockUserRepository.seedFollows([]);
+
+          const result = await service.getFollowers(targetUser.id);
+
+          expect(result).toEqual([]);
         },
-      ]);
-
-      mockUserRepository.seedFollows([
-        { followerId: 'follower-1', followingId: targetUser.id },
-        { followerId: 'follower-2', followingId: targetUser.id },
-      ]);
-
-      const result = await service.getFollowers(targetUser.id);
-
-      expect(result).toHaveLength(2);
-      expect(result.map((user) => user.username)).toEqual(['ana', 'carla']);
-      expect(result.every((user) => !('password' in user))).toBe(true);
-    });
-
-    it('should return empty array when user has no followers', async () => {
-      mockUserRepository.seed([targetUser]);
-      mockUserRepository.seedFollows([]);
-
-      const result = await service.getFollowers(targetUser.id);
-
-      expect(result).toEqual([]);
-    });
-
-    it('should throw NotFoundException when user does not exist', async () => {
-      await expect(service.getFollowers('missing-user')).rejects.toBeInstanceOf(
-        NotFoundException,
-      );
-    });
+      },
+      {
+        description: 'should throw NotFoundException when user does not exist',
+        execute: async () => {
+          await expect(
+            service.getFollowers('missing-user'),
+          ).rejects.toBeInstanceOf(NotFoundException);
+        },
+      },
+    ])('$description', ({ execute }) => execute());
   });
 
   describe('getFollowing', () => {
@@ -618,49 +632,60 @@ describe('UserService', () => {
       name: 'Follower User',
     };
 
-    it('should return sanitized following list ordered by username', async () => {
-      mockUserRepository.seed([
-        user,
-        {
-          id: 'following-2',
-          username: 'zeta',
-          email: 'zeta@test.com',
-          name: 'Zeta Following',
+    test.each([
+      {
+        description:
+          'should return sanitized following list ordered by username',
+        execute: async () => {
+          mockUserRepository.seed([
+            user,
+            {
+              id: 'following-2',
+              username: 'zeta',
+              email: 'zeta@test.com',
+              name: 'Zeta Following',
+            },
+            {
+              id: 'following-1',
+              username: 'beta',
+              email: 'beta@test.com',
+              name: 'Beta Following',
+            },
+          ]);
+
+          mockUserRepository.seedFollows([
+            { followerId: user.id, followingId: 'following-1' },
+            { followerId: user.id, followingId: 'following-2' },
+          ]);
+
+          const result = await service.getFollowing(user.id);
+
+          expect(result).toHaveLength(2);
+          expect(result.map((u) => u.username)).toEqual(['beta', 'zeta']);
+          expect(result.every((u) => !('password' in u))).toBe(true);
         },
-        {
-          id: 'following-1',
-          username: 'beta',
-          email: 'beta@test.com',
-          name: 'Beta Following',
+      },
+      {
+        description:
+          'should return empty array when user is not following anyone',
+        execute: async () => {
+          mockUserRepository.seed([user]);
+          mockUserRepository.seedFollows([]);
+
+          const result = await service.getFollowing(user.id);
+
+          expect(result).toEqual([]);
         },
-      ]);
-
-      mockUserRepository.seedFollows([
-        { followerId: user.id, followingId: 'following-1' },
-        { followerId: user.id, followingId: 'following-2' },
-      ]);
-
-      const result = await service.getFollowing(user.id);
-
-      expect(result).toHaveLength(2);
-      expect(result.map((u) => u.username)).toEqual(['beta', 'zeta']);
-      expect(result.every((u) => !('password' in u))).toBe(true);
-    });
-
-    it('should return empty array when user is not following anyone', async () => {
-      mockUserRepository.seed([user]);
-      mockUserRepository.seedFollows([]);
-
-      const result = await service.getFollowing(user.id);
-
-      expect(result).toEqual([]);
-    });
-
-    it('should throw NotFoundException when user does not exist', async () => {
-      await expect(service.getFollowing('missing-user')).rejects.toBeInstanceOf(
-        NotFoundException,
-      );
-    });
+      },
+      {
+        description: 'should throw NotFoundException when user does not exist',
+        execute: async () => {
+          await expect(
+            service.getFollowing('missing-user'),
+          ).rejects.toBeInstanceOf(NotFoundException);
+        },
+      },
+    ])('$description', ({ execute }) => execute());
   });
 
   describe('searchUsers', () => {

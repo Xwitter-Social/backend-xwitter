@@ -48,90 +48,105 @@ describe('ConversationService', () => {
   });
 
   describe('startOrGetConversation', () => {
-    it('should create a new conversation when none exists between participants', async () => {
-      const currentUser = buildParticipant('user-1');
-      const otherUser = buildParticipant('user-2');
+    test.each([
+      {
+        description:
+          'should create a new conversation when none exists between participants',
+        execute: async () => {
+          const currentUser = buildParticipant('user-1');
+          const otherUser = buildParticipant('user-2');
 
-      userRepository.seed([
-        {
-          id: currentUser.id,
-          username: currentUser.username,
-          name: currentUser.name,
-          email: 'user1@example.com',
-          password: 'hashed',
+          userRepository.seed([
+            {
+              id: currentUser.id,
+              username: currentUser.username,
+              name: currentUser.name,
+              email: 'user1@example.com',
+              password: 'hashed',
+            },
+            {
+              id: otherUser.id,
+              username: otherUser.username,
+              name: otherUser.name,
+              email: 'user2@example.com',
+              password: 'hashed',
+            },
+          ]);
+
+          conversationRepository.seedParticipants([currentUser, otherUser]);
+
+          const result = await service.startOrGetConversation(
+            currentUser.id,
+            otherUser.id,
+          );
+
+          const participantIds = result.participants.map(
+            (participant) => participant.id,
+          );
+          expect(participantIds).toEqual(
+            expect.arrayContaining([currentUser.id, otherUser.id]),
+          );
+
+          const storedConversations =
+            await conversationRepository.listConversationsByUser(
+              currentUser.id,
+            );
+
+          expect(storedConversations).toHaveLength(1);
+          expect(
+            storedConversations[0].participants.map(
+              (participant) => participant.id,
+            ),
+          ).toEqual(expect.arrayContaining([currentUser.id, otherUser.id]));
         },
-        {
-          id: otherUser.id,
-          username: otherUser.username,
-          name: otherUser.name,
-          email: 'user2@example.com',
-          password: 'hashed',
+      },
+      {
+        description:
+          'should reuse existing conversation between two participants',
+        execute: async () => {
+          const currentUser = buildParticipant('user-1');
+          const otherUser = buildParticipant('user-2');
+
+          userRepository.seed([
+            {
+              id: currentUser.id,
+              username: currentUser.username,
+              name: currentUser.name,
+              email: 'user1@example.com',
+              password: 'hashed',
+            },
+            {
+              id: otherUser.id,
+              username: otherUser.username,
+              name: otherUser.name,
+              email: 'user2@example.com',
+              password: 'hashed',
+            },
+          ]);
+
+          conversationRepository.seedParticipants([currentUser, otherUser]);
+          conversationRepository.seedConversations([
+            {
+              id: 'conversation-1',
+              participants: [currentUser, otherUser],
+            },
+          ]);
+
+          const result = await service.startOrGetConversation(
+            currentUser.id,
+            otherUser.id,
+          );
+
+          expect(result.id).toBe('conversation-1');
+          const conversations =
+            await conversationRepository.listConversationsByUser(
+              currentUser.id,
+            );
+          expect(conversations).toHaveLength(1);
         },
-      ]);
-
-      conversationRepository.seedParticipants([currentUser, otherUser]);
-
-      const result = await service.startOrGetConversation(
-        currentUser.id,
-        otherUser.id,
-      );
-
-      const participantIds = result.participants.map(
-        (participant) => participant.id,
-      );
-      expect(participantIds).toEqual(
-        expect.arrayContaining([currentUser.id, otherUser.id]),
-      );
-
-      const storedConversations =
-        await conversationRepository.listConversationsByUser(currentUser.id);
-
-      expect(storedConversations).toHaveLength(1);
-      expect(
-        storedConversations[0].participants.map(
-          (participant) => participant.id,
-        ),
-      ).toEqual(expect.arrayContaining([currentUser.id, otherUser.id]));
-    });
-
-    it('should reuse existing conversation between two participants', async () => {
-      const currentUser = buildParticipant('user-1');
-      const otherUser = buildParticipant('user-2');
-
-      userRepository.seed([
-        {
-          id: currentUser.id,
-          username: currentUser.username,
-          name: currentUser.name,
-          email: 'user1@example.com',
-          password: 'hashed',
-        },
-        {
-          id: otherUser.id,
-          username: otherUser.username,
-          name: otherUser.name,
-          email: 'user2@example.com',
-          password: 'hashed',
-        },
-      ]);
-
-      conversationRepository.seedParticipants([currentUser, otherUser]);
-      conversationRepository.seedConversations([
-        {
-          id: 'conversation-1',
-          participants: [currentUser, otherUser],
-        },
-      ]);
-
-      const result = await service.startOrGetConversation(
-        currentUser.id,
-        otherUser.id,
-      );
-
-      expect(result.id).toBe('conversation-1');
-      const conversations =
-        await conversationRepository.listConversationsByUser(currentUser.id);
-      expect(conversations).toHaveLength(1);
+      },
+    ])('$description', async ({ execute }) => {
+      await execute();
     });
 
     test.each([
@@ -180,117 +195,143 @@ describe('ConversationService', () => {
   });
 
   describe('getConversationsForUser', () => {
-    it('should map repository results to conversation summaries with last message', async () => {
-      const currentUser = buildParticipant('user-1');
-      const otherUser = buildParticipant('user-2');
+    test.each([
+      {
+        description:
+          'should map repository results to conversation summaries with last message',
+        execute: async () => {
+          const currentUser = buildParticipant('user-1');
+          const otherUser = buildParticipant('user-2');
 
-      conversationRepository.seedParticipants([currentUser, otherUser]);
-      conversationRepository.seedConversations([
-        {
-          id: 'conversation-10',
-          participants: [currentUser, otherUser],
-          updatedAt: new Date('2025-01-01T12:05:00.000Z'),
+          conversationRepository.seedParticipants([currentUser, otherUser]);
+          conversationRepository.seedConversations([
+            {
+              id: 'conversation-10',
+              participants: [currentUser, otherUser],
+              updatedAt: new Date('2025-01-01T12:05:00.000Z'),
+            },
+          ]);
+          conversationRepository.seedMessages([
+            {
+              id: 'message-1',
+              conversationId: 'conversation-10',
+              authorId: otherUser.id,
+              content: 'Olá!',
+              createdAt: new Date('2025-01-01T12:05:00.000Z'),
+            },
+          ]);
+
+          const result = await service.getConversationsForUser(currentUser.id);
+
+          expect(result).toHaveLength(1);
+          expect(result[0]).toMatchObject({
+            id: 'conversation-10',
+            participant: {
+              id: otherUser.id,
+              username: otherUser.username,
+              name: otherUser.name,
+            },
+            lastMessage: {
+              id: 'message-1',
+              content: 'Olá!',
+            },
+          });
         },
-      ]);
-      conversationRepository.seedMessages([
-        {
-          id: 'message-1',
-          conversationId: 'conversation-10',
-          authorId: otherUser.id,
-          content: 'Olá!',
-          createdAt: new Date('2025-01-01T12:05:00.000Z'),
+      },
+      {
+        description:
+          'should throw when repository returns conversation without another participant',
+        execute: async () => {
+          const currentUser = buildParticipant('user-1');
+
+          conversationRepository.seedParticipants([currentUser]);
+          conversationRepository.seedConversations([
+            {
+              id: 'conversation-20',
+              participants: [currentUser],
+            },
+          ]);
+
+          await expect(
+            service.getConversationsForUser(currentUser.id),
+          ).rejects.toBeInstanceOf(NotFoundException);
         },
-      ]);
-
-      const result = await service.getConversationsForUser(currentUser.id);
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toMatchObject({
-        id: 'conversation-10',
-        participant: {
-          id: otherUser.id,
-          username: otherUser.username,
-          name: otherUser.name,
-        },
-        lastMessage: {
-          id: 'message-1',
-          content: 'Olá!',
-        },
-      });
-    });
-
-    it('should throw when repository returns conversation without another participant', async () => {
-      const currentUser = buildParticipant('user-1');
-
-      conversationRepository.seedParticipants([currentUser]);
-      conversationRepository.seedConversations([
-        {
-          id: 'conversation-20',
-          participants: [currentUser],
-        },
-      ]);
-
-      await expect(
-        service.getConversationsForUser(currentUser.id),
-      ).rejects.toBeInstanceOf(NotFoundException);
+      },
+    ])('$description', async ({ execute }) => {
+      await execute();
     });
   });
 
   describe('getMessagesForConversation', () => {
-    it('should return messages when user participates in conversation', async () => {
-      const currentUser = buildParticipant('user-1');
-      const otherUser = buildParticipant('user-2');
+    test.each([
+      {
+        description:
+          'should return messages when user participates in conversation',
+        execute: async () => {
+          const currentUser = buildParticipant('user-1');
+          const otherUser = buildParticipant('user-2');
 
-      conversationRepository.seedParticipants([currentUser, otherUser]);
-      conversationRepository.seedConversations([
-        {
-          id: 'conversation-30',
-          participants: [currentUser, otherUser],
+          conversationRepository.seedParticipants([currentUser, otherUser]);
+          conversationRepository.seedConversations([
+            {
+              id: 'conversation-30',
+              participants: [currentUser, otherUser],
+            },
+          ]);
+          conversationRepository.seedMessages([
+            {
+              id: 'message-1',
+              conversationId: 'conversation-30',
+              authorId: currentUser.id,
+              content: 'Mensagem inicial',
+              createdAt: new Date('2025-01-01T12:00:00.000Z'),
+            },
+          ]);
+
+          const result = await service.getMessagesForConversation(
+            currentUser.id,
+            'conversation-30',
+          );
+
+          expect(result).toHaveLength(1);
+          expect(result[0]).toMatchObject({
+            content: 'Mensagem inicial',
+            authorId: currentUser.id,
+          });
         },
-      ]);
-      conversationRepository.seedMessages([
-        {
-          id: 'message-1',
-          conversationId: 'conversation-30',
-          authorId: currentUser.id,
-          content: 'Mensagem inicial',
-          createdAt: new Date('2025-01-01T12:00:00.000Z'),
+      },
+      {
+        description: 'should throw NotFound when conversation does not exist',
+        execute: async () => {
+          await expect(
+            service.getMessagesForConversation(
+              'user-1',
+              'missing-conversation',
+            ),
+          ).rejects.toBeInstanceOf(NotFoundException);
         },
-      ]);
+      },
+      {
+        description: 'should throw Forbidden when user is not a participant',
+        execute: async () => {
+          const userA = buildParticipant('user-1');
+          const userB = buildParticipant('user-2');
 
-      const result = await service.getMessagesForConversation(
-        currentUser.id,
-        'conversation-30',
-      );
+          conversationRepository.seedParticipants([userA, userB]);
+          conversationRepository.seedConversations([
+            {
+              id: 'conversation-40',
+              participants: [userA, userB],
+            },
+          ]);
 
-      expect(result).toHaveLength(1);
-      expect(result[0]).toMatchObject({
-        content: 'Mensagem inicial',
-        authorId: currentUser.id,
-      });
-    });
-
-    it('should throw NotFound when conversation does not exist', async () => {
-      await expect(
-        service.getMessagesForConversation('user-1', 'missing-conversation'),
-      ).rejects.toBeInstanceOf(NotFoundException);
-    });
-
-    it('should throw Forbidden when user is not a participant', async () => {
-      const userA = buildParticipant('user-1');
-      const userB = buildParticipant('user-2');
-
-      conversationRepository.seedParticipants([userA, userB]);
-      conversationRepository.seedConversations([
-        {
-          id: 'conversation-40',
-          participants: [userA, userB],
+          await expect(
+            service.getMessagesForConversation('intruder', 'conversation-40'),
+          ).rejects.toBeInstanceOf(ForbiddenException);
         },
-      ]);
-
-      await expect(
-        service.getMessagesForConversation('intruder', 'conversation-40'),
-      ).rejects.toBeInstanceOf(ForbiddenException);
+      },
+    ])('$description', async ({ execute }) => {
+      await execute();
     });
   });
 
@@ -308,25 +349,32 @@ describe('ConversationService', () => {
       ]);
     };
 
-    it('should create message trimming whitespace', async () => {
-      setupConversation();
+    test.each([
+      {
+        description: 'should create message trimming whitespace',
+        execute: async () => {
+          setupConversation();
 
-      const result = await service.sendMessage(
-        'user-1',
-        'conversation-50',
-        '   mensagem com espaços   ',
-      );
+          const result = await service.sendMessage(
+            'user-1',
+            'conversation-50',
+            '   mensagem com espaços   ',
+          );
 
-      expect(result).toMatchObject({
-        conversationId: 'conversation-50',
-        content: 'mensagem com espaços',
-        authorId: 'user-1',
-      });
+          expect(result).toMatchObject({
+            conversationId: 'conversation-50',
+            content: 'mensagem com espaços',
+            authorId: 'user-1',
+          });
 
-      const messages =
-        await conversationRepository.getMessages('conversation-50');
-      expect(messages).toHaveLength(1);
-      expect(messages[0].content).toBe('mensagem com espaços');
+          const messages =
+            await conversationRepository.getMessages('conversation-50');
+          expect(messages).toHaveLength(1);
+          expect(messages[0].content).toBe('mensagem com espaços');
+        },
+      },
+    ])('$description', async ({ execute }) => {
+      await execute();
     });
 
     test.each([
@@ -350,18 +398,27 @@ describe('ConversationService', () => {
       ).rejects.toBeInstanceOf(BadRequestException);
     });
 
-    it('should throw NotFound when conversation does not exist', async () => {
-      await expect(
-        service.sendMessage('user-1', 'missing-conversation', 'oi'),
-      ).rejects.toBeInstanceOf(NotFoundException);
-    });
+    test.each([
+      {
+        description: 'should throw NotFound when conversation does not exist',
+        execute: async () => {
+          await expect(
+            service.sendMessage('user-1', 'missing-conversation', 'oi'),
+          ).rejects.toBeInstanceOf(NotFoundException);
+        },
+      },
+      {
+        description: 'should throw Forbidden when user is not participant',
+        execute: async () => {
+          setupConversation();
 
-    it('should throw Forbidden when user is not participant', async () => {
-      setupConversation();
-
-      await expect(
-        service.sendMessage('intruder', 'conversation-50', 'Mensagem'),
-      ).rejects.toBeInstanceOf(ForbiddenException);
+          await expect(
+            service.sendMessage('intruder', 'conversation-50', 'Mensagem'),
+          ).rejects.toBeInstanceOf(ForbiddenException);
+        },
+      },
+    ])('$description', async ({ execute }) => {
+      await execute();
     });
   });
 });

@@ -12,7 +12,12 @@ describe('PrismaService', () => {
     service = module.get<PrismaService>(PrismaService);
   });
 
-  it('should be defined', () => {
-    expect(service).toBeDefined();
-  });
+  test.each([
+    {
+      description: 'should be defined',
+      execute: () => {
+        expect(service).toBeDefined();
+      },
+    },
+  ])('$description', ({ execute }) => execute());
 });

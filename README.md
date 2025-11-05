@@ -53,12 +53,9 @@ Foram representados tanto o diagrama de classes da implementação do sistema de
 
 ### Diagrama de Classes Geral do Xwitter (implementação + entidades)
 
-
 [![Classes](assets/classes-xwitter.svg)](assets/classes-implementacao.png)
 
-
 [Ampliar.](assets/classes-implementacao.png)
-
 
 ### Diagrama de Classes das Entidades do Xwitter
 
@@ -74,7 +71,6 @@ Foram representados tanto o diagrama de classes da implementação do sistema de
 
 ---
 
-
 ## 🏗️ Arquitetura da Solução
 
 O Xwitter foi desenvolvido seguindo os princípios de **Arquitetura Limpa** e **Domain-Driven Design (DDD)**, garantindo separação de responsabilidades, testabilidade e manutenibilidade.
@@ -86,22 +82,26 @@ O Xwitter foi desenvolvido seguindo os princípios de **Arquitetura Limpa** e **
 ### 📋 Camadas da Arquitetura:
 
 #### **🎯 Presentation Layer (Camada de Apresentação)**
+
 - **Controllers**: Pontos de entrada HTTP/REST
 - **Guards**: Validação de autenticação e autorização
 - **DTOs**: Objetos de transferência de dados com validação
 - **Swagger Decorators**: Documentação automática da API
 
 #### **💼 Business Layer (Camada de Negócio)**
+
 - **Services**: Lógica de negócio e regras da aplicação
 - **Interfaces**: Contratos para repositórios e serviços
 - **Utils**: Funções auxiliares e utilitários
 
 #### **🗄️ Data Layer (Camada de Dados)**
+
 - **Repositories**: Padrão Repository para acesso a dados
 - **Prisma ORM**: Mapeamento objeto-relacional
 - **Database**: PostgreSQL com conexões gerenciadas
 
 #### **🔧 Infrastructure Layer (Camada de Infraestrutura)**
+
 - **Docker**: Containerização da aplicação
 - **JWT**: Sistema de autenticação com tokens
 - **Environment Configuration**: Configuração por variáveis de ambiente
@@ -122,6 +122,7 @@ O Xwitter foi desenvolvido seguindo os princípios de **Arquitetura Limpa** e **
 ### Pré-requisitos
 
 Certifique-se de ter instalado:
+
 - [Git](https://git-scm.com/)
 - [Docker](https://docs.docker.com/get-docker/)
 - [Docker Compose](https://docs.docker.com/compose/install/)
@@ -140,6 +141,9 @@ cp .env.example .env
 
 # 3. Execute o projeto (primeira vez)
 docker-compose up --build
+
+# 4. (Opcional) Execute os testes de forma visível
+docker-compose up --build tests
 ```
 
 ### ✨ O que acontece automaticamente:
@@ -167,6 +171,9 @@ docker-compose up -d
 
 # Para visualizar logs
 docker-compose logs -f backend
+
+# Para rodar os testes unitários e ver o output no terminal
+docker-compose up tests
 
 # Para parar
 docker-compose down
@@ -199,8 +206,16 @@ docker-compose exec backend npx prisma migrate reset --force
 
 ### Seed de Dados
 
+- ✅ **Seed automático no Docker**: sempre que o serviço `backend` sobe em modo de desenvolvimento (`NODE_ENV=development`), executamos `prisma db seed` automaticamente. Isso garante que exista um conjunto mínimo de usuários, posts, follows e uma conversa com mensagens para testar rapidamente.
+- 🔧 **Desativar/forçar o seed**: defina a variável `ENABLE_STARTUP_SEED=false` no `docker-compose.yml` (ou no `.env`) caso não queira popular automaticamente. Em produção o seed é ignorado por padrão.
+- 👥 **Credenciais padrão**:
+  - `alice@xwitter.dev` / senha `xwitter123`
+  - `bob@xwitter.dev` / senha `xwitter123`
+  - `charlie@xwitter.dev` / senha `xwitter123`
+
+Se preferir rodar manualmente, use o comando abaixo:
+
 ```bash
-# Execute o seed (se configurado)
 docker-compose exec backend npx prisma db seed
 ```
 
@@ -239,6 +254,9 @@ git commit -m "feat: adiciona nova tabela X"
 ### 🧪 Executando Testes
 
 ```bash
+# Rodar os testes em um serviço dedicado
+docker-compose up tests
+
 # Testes unitários
 docker-compose exec backend npm run test
 
@@ -255,7 +273,7 @@ Utiliza-se [Conventional Commits](https://www.conventionalcommits.org/):
 
 ```bash
 feat: adiciona nova funcionalidade
-fix: corrige bug específico  
+fix: corrige bug específico
 docs: atualiza documentação
 refactor: refatora código sem alterar funcionalidade
 test: adiciona ou modifica testes
@@ -265,10 +283,16 @@ chore: mudanças de build, CI, dependências
 ### 🔍 Linting e Formatação
 
 ```bash
-# Lint
+# Verificar lint localmente (fora do Docker) - retorna erros/warnings se existirem
+npm run lint
+
+# Formatar o código localmente, corrigindo problemas automaticamente
+npm run format
+
+# Lint dentro do container Docker
 docker-compose exec backend npm run lint
 
-# Formatação
+# Formatação dentro do container Docker
 docker-compose exec backend npm run format
 ```
 
@@ -337,27 +361,30 @@ docker system prune -a
 ## 🤔 Problemas Frequentes
 
 ### O banco não está conectando
+
 - Verifique se o PostgreSQL subiu corretamente: `docker-compose logs db`
 - Confirme se as variáveis de ambiente estão corretas
 
 ### Erro de permissão no Docker
+
 ```bash
 sudo usermod -aG docker $USER
 # Depois faça logout/login
 ```
 
 ### Container não reconhece novas dependências
+
 ```bash
 docker-compose build --no-cache backend
 docker-compose up
 ```
 
 ### Reset completo do ambiente
+
 ```bash
 docker-compose down -v
 docker system prune -a
 docker-compose up --build
 ```
-
 
 ---

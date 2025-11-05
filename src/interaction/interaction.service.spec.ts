@@ -71,27 +71,35 @@ describe('InteractionService', () => {
   });
 
   describe('followUser', () => {
-    it('should create follow relation when target exists and is different from current user', async () => {
-      const currentUserId = 'user-1';
-      const targetUserId = 'user-2';
+    test.each([
+      {
+        description:
+          'should create follow relation when target exists and is different from current user',
+        execute: async () => {
+          const currentUserId = 'user-1';
+          const targetUserId = 'user-2';
 
-      userRepo.seed([
-        buildUser({ id: currentUserId, username: 'current-user' }),
-        buildUser({ id: targetUserId, username: 'target-user' }),
-      ]);
+          userRepo.seed([
+            buildUser({ id: currentUserId, username: 'current-user' }),
+            buildUser({ id: targetUserId, username: 'target-user' }),
+          ]);
 
-      const result = await service.followUser(currentUserId, targetUserId);
+          const result = await service.followUser(currentUserId, targetUserId);
 
-      expect(result).toMatchObject({
-        followerId: currentUserId,
-        followingId: targetUserId,
-      });
+          expect(result).toMatchObject({
+            followerId: currentUserId,
+            followingId: targetUserId,
+          });
 
-      const stored = await interactionRepo.findFollow(
-        currentUserId,
-        targetUserId,
-      );
-      expect(stored).not.toBeNull();
+          const stored = await interactionRepo.findFollow(
+            currentUserId,
+            targetUserId,
+          );
+          expect(stored).not.toBeNull();
+        },
+      },
+    ])('$description', async ({ execute }) => {
+      await execute();
     });
 
     test.each([
@@ -186,13 +194,20 @@ describe('InteractionService', () => {
       postRepo.seedPosts([buildPost({ id: postId })]);
     });
 
-    it('should create like when post exists and is not liked yet', async () => {
-      const result = await service.likePost(userId, postId);
+    test.each([
+      {
+        description: 'should create like when post exists and is not liked yet',
+        execute: async () => {
+          const result = await service.likePost(userId, postId);
 
-      expect(result).toMatchObject({ userId, postId });
+          expect(result).toMatchObject({ userId, postId });
 
-      const stored = await interactionRepo.findLike(userId, postId);
-      expect(stored).not.toBeNull();
+          const stored = await interactionRepo.findLike(userId, postId);
+          expect(stored).not.toBeNull();
+        },
+      },
+    ])('$description', async ({ execute }) => {
+      await execute();
     });
 
     test.each([
@@ -261,14 +276,22 @@ describe('InteractionService', () => {
       postRepo.seedPosts([buildPost({ id: postId })]);
     });
 
-    it('should create repost when post exists and user has not reposted yet', async () => {
-      const result = await service.createRepost(userId, postId);
+    test.each([
+      {
+        description:
+          'should create repost when post exists and user has not reposted yet',
+        execute: async () => {
+          const result = await service.createRepost(userId, postId);
 
-      expect(result).toMatchObject({
-        userId,
-        postId,
-      });
-      expect(result.createdAt).toBeInstanceOf(Date);
+          expect(result).toMatchObject({
+            userId,
+            postId,
+          });
+          expect(result.createdAt).toBeInstanceOf(Date);
+        },
+      },
+    ])('$description', async ({ execute }) => {
+      await execute();
     });
 
     test.each([
@@ -306,14 +329,21 @@ describe('InteractionService', () => {
       postRepo.seedPosts([buildPost({ id: postId })]);
     });
 
-    it('should delete repost when it belongs to current user', async () => {
-      const userId = 'owner-user';
-      const repost = await interactionRepo.createRepost(userId, postId);
+    test.each([
+      {
+        description: 'should delete repost when it belongs to current user',
+        execute: async () => {
+          const userId = 'owner-user';
+          const repost = await interactionRepo.createRepost(userId, postId);
 
-      await service.deleteRepost(userId, repost.id);
+          await service.deleteRepost(userId, repost.id);
 
-      const stored = await interactionRepo.findRepostById(repost.id);
-      expect(stored).toBeNull();
+          const stored = await interactionRepo.findRepostById(repost.id);
+          expect(stored).toBeNull();
+        },
+      },
+    ])('$description', async ({ execute }) => {
+      await execute();
     });
 
     test.each([
@@ -353,39 +383,49 @@ describe('InteractionService', () => {
       postRepo.seedPosts([buildPost({ id: postId })]);
     });
 
-    it('should create comment trimming content and linking user', async () => {
-      const result = await service.createComment('author-1', {
-        postId,
-        content: '   Comentário com espaços   ',
-      });
+    test.each([
+      {
+        description: 'should create comment trimming content and linking user',
+        execute: async () => {
+          const result = await service.createComment('author-1', {
+            postId,
+            content: '   Comentário com espaços   ',
+          });
 
-      expect(result).toMatchObject({
-        postId,
-        authorId: 'author-1',
-        content: 'Comentário com espaços',
-      });
-      expect(result.createdAt).toBeInstanceOf(Date);
-    });
-
-    it('should create comment replying to another comment within the same post', async () => {
-      const parentCommentId = 'comment-parent';
-
-      interactionRepo.seedComments([
-        {
-          id: parentCommentId,
-          postId,
-          authorId: 'other-user',
-          content: 'Comentário original',
+          expect(result).toMatchObject({
+            postId,
+            authorId: 'author-1',
+            content: 'Comentário com espaços',
+          });
+          expect(result.createdAt).toBeInstanceOf(Date);
         },
-      ]);
+      },
+      {
+        description:
+          'should create comment replying to another comment within the same post',
+        execute: async () => {
+          const parentCommentId = 'comment-parent';
 
-      const result = await service.createComment('author-2', {
-        postId,
-        content: 'Resposta ao comentário',
-        parentCommentId,
-      });
+          interactionRepo.seedComments([
+            {
+              id: parentCommentId,
+              postId,
+              authorId: 'other-user',
+              content: 'Comentário original',
+            },
+          ]);
 
-      expect(result.parentId).toBe(parentCommentId);
+          const result = await service.createComment('author-2', {
+            postId,
+            content: 'Resposta ao comentário',
+            parentCommentId,
+          });
+
+          expect(result.parentId).toBe(parentCommentId);
+        },
+      },
+    ])('$description', async ({ execute }) => {
+      await execute();
     });
 
     test.each([
@@ -477,22 +517,29 @@ describe('InteractionService', () => {
   });
 
   describe('deleteComment', () => {
-    it('should delete comment when it belongs to current user', async () => {
-      const commentId = 'comment-1';
+    test.each([
+      {
+        description: 'should delete comment when it belongs to current user',
+        execute: async () => {
+          const commentId = 'comment-1';
 
-      interactionRepo.seedComments([
-        {
-          id: commentId,
-          postId: 'post-comment',
-          authorId: 'author-1',
-          content: 'Comentário a ser removido',
+          interactionRepo.seedComments([
+            {
+              id: commentId,
+              postId: 'post-comment',
+              authorId: 'author-1',
+              content: 'Comentário a ser removido',
+            },
+          ]);
+
+          await service.deleteComment('author-1', commentId);
+
+          const stored = await interactionRepo.findCommentById(commentId);
+          expect(stored).toBeNull();
         },
-      ]);
-
-      await service.deleteComment('author-1', commentId);
-
-      const stored = await interactionRepo.findCommentById(commentId);
-      expect(stored).toBeNull();
+      },
+    ])('$description', async ({ execute }) => {
+      await execute();
     });
 
     test.each([

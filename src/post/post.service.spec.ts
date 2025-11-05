@@ -152,9 +152,14 @@ describe('PostService', () => {
     userRepository.clear();
   });
 
-  it('should be defined', () => {
-    expect(service).toBeDefined();
-  });
+  test.each([
+    {
+      description: 'should be defined',
+      execute: () => {
+        expect(service).toBeDefined();
+      },
+    },
+  ])('$description', ({ execute }) => execute());
 
   describe('createPost', () => {
     test.each([
@@ -203,45 +208,54 @@ describe('PostService', () => {
   });
 
   describe('getTimeline', () => {
-    it('should map posts returned by repository to timeline DTOs preserving order', async () => {
-      const firstPost = buildPostWithCounts({
-        id: 'post-1',
-        content: 'Primeiro post',
-        createdAt: new Date('2025-01-02T08:00:00.000Z'),
-        likeCount: 5,
-        commentCount: 2,
-      });
+    test.each([
+      {
+        description:
+          'should map posts returned by repository to timeline DTOs preserving order',
+        execute: async () => {
+          const firstPost = buildPostWithCounts({
+            id: 'post-1',
+            content: 'Primeiro post',
+            createdAt: new Date('2025-01-02T08:00:00.000Z'),
+            likeCount: 5,
+            commentCount: 2,
+          });
 
-      const secondPost = buildPostWithCounts({
-        id: 'post-2',
-        content: 'Segundo post',
-        createdAt: new Date('2025-01-01T12:00:00.000Z'),
-        likeCount: 1,
-        commentCount: 0,
-      });
+          const secondPost = buildPostWithCounts({
+            id: 'post-2',
+            content: 'Segundo post',
+            createdAt: new Date('2025-01-01T12:00:00.000Z'),
+            likeCount: 1,
+            commentCount: 0,
+          });
 
-      repository.seedTimeline('user-1', [firstPost, secondPost]);
+          repository.seedTimeline('user-1', [firstPost, secondPost]);
 
-      const result = await service.getTimeline('user-1');
+          const result = await service.getTimeline('user-1');
 
-      expect(result).toHaveLength(2);
-      expect(result[0]).toMatchObject({
-        id: 'post-1',
-        content: 'Primeiro post',
-        likeCount: 5,
-        commentCount: 2,
-      });
-      expect(result[0].author).toMatchObject(firstPost.author);
-      expect(result[1]).toMatchObject({
-        id: 'post-2',
-        content: 'Segundo post',
-      });
-    });
-
-    it('should return empty array when repository has no posts for user', async () => {
-      const result = await service.getTimeline('user-sem-posts');
-      expect(result).toEqual([]);
-    });
+          expect(result).toHaveLength(2);
+          expect(result[0]).toMatchObject({
+            id: 'post-1',
+            content: 'Primeiro post',
+            likeCount: 5,
+            commentCount: 2,
+          });
+          expect(result[0].author).toMatchObject(firstPost.author);
+          expect(result[1]).toMatchObject({
+            id: 'post-2',
+            content: 'Segundo post',
+          });
+        },
+      },
+      {
+        description:
+          'should return empty array when repository has no posts for user',
+        execute: async () => {
+          const result = await service.getTimeline('user-sem-posts');
+          expect(result).toEqual([]);
+        },
+      },
+    ])('$description', ({ execute }) => execute());
   });
 
   describe('searchPosts', () => {
@@ -273,28 +287,36 @@ describe('PostService', () => {
       repository.seedPostSearch(searchablePosts);
     });
 
-    it('should return posts whose content contains the query fragment', async () => {
-      const result = await service.searchPosts('produto');
+    test.each([
+      {
+        description:
+          'should return posts whose content contains the query fragment',
+        execute: async () => {
+          const result = await service.searchPosts('produto');
 
-      expect(result).toHaveLength(2);
-      expect(result[0]).toMatchObject({
-        id: 'post-201',
-        content: 'Atualização de produto lançada hoje',
-        likeCount: 10,
-        commentCount: 2,
-      });
-      expect(result[1]).toMatchObject({
-        id: 'post-203',
-        content: 'Checklist para lançamento de produto',
-      });
-    });
+          expect(result).toHaveLength(2);
+          expect(result[0]).toMatchObject({
+            id: 'post-201',
+            content: 'Atualização de produto lançada hoje',
+            likeCount: 10,
+            commentCount: 2,
+          });
+          expect(result[1]).toMatchObject({
+            id: 'post-203',
+            content: 'Checklist para lançamento de produto',
+          });
+        },
+      },
+      {
+        description: 'should trim query and ignore casing when searching',
+        execute: async () => {
+          const result = await service.searchPosts('   PRODutividade   ');
 
-    it('should trim query and ignore casing when searching', async () => {
-      const result = await service.searchPosts('   PRODutividade   ');
-
-      expect(result).toHaveLength(1);
-      expect(result[0].id).toBe('post-202');
-    });
+          expect(result).toHaveLength(1);
+          expect(result[0].id).toBe('post-202');
+        },
+      },
+    ])('$description', ({ execute }) => execute());
 
     test.each(['', '   '])(
       'should return empty array when query is only whitespace: "%s"',
@@ -308,174 +330,204 @@ describe('PostService', () => {
   describe('getPostsByUser', () => {
     const userId = 'user-42';
 
-    it('should return authored posts ordered by creation date descending', async () => {
-      userRepository.seed([buildUser({ id: userId, username: 'author42' })]);
+    test.each([
+      {
+        description:
+          'should return authored posts ordered by creation date descending',
+        execute: async () => {
+          userRepository.seed([
+            buildUser({ id: userId, username: 'author42' }),
+          ]);
 
-      const newerPost = buildPostWithCounts({
-        id: 'post-new',
-        authorId: userId,
-        createdAt: new Date('2025-04-01T12:00:00.000Z'),
-      });
-      const olderPost = buildPostWithCounts({
-        id: 'post-old',
-        authorId: userId,
-        createdAt: new Date('2025-03-01T12:00:00.000Z'),
-      });
+          const newerPost = buildPostWithCounts({
+            id: 'post-new',
+            authorId: userId,
+            createdAt: new Date('2025-04-01T12:00:00.000Z'),
+          });
+          const olderPost = buildPostWithCounts({
+            id: 'post-old',
+            authorId: userId,
+            createdAt: new Date('2025-03-01T12:00:00.000Z'),
+          });
 
-      repository.seedUserPosts(userId, [newerPost, olderPost]);
+          repository.seedUserPosts(userId, [newerPost, olderPost]);
 
-      const result = await service.getPostsByUser(userId);
+          const result = await service.getPostsByUser(userId);
 
-      expect(result).toHaveLength(2);
-      expect(result[0]).toMatchObject({
-        id: 'post-new',
-        createdAt: newerPost.createdAt,
-      });
-      expect(result[1]).toMatchObject({
-        id: 'post-old',
-        createdAt: olderPost.createdAt,
-      });
-    });
+          expect(result).toHaveLength(2);
+          expect(result[0]).toMatchObject({
+            id: 'post-new',
+            createdAt: newerPost.createdAt,
+          });
+          expect(result[1]).toMatchObject({
+            id: 'post-old',
+            createdAt: olderPost.createdAt,
+          });
+        },
+      },
+      {
+        description: 'should return empty array when user has no posts',
+        execute: async () => {
+          userRepository.seed([
+            buildUser({ id: userId, username: 'author42' }),
+          ]);
 
-    it('should return empty array when user has no posts', async () => {
-      userRepository.seed([buildUser({ id: userId, username: 'author42' })]);
+          const result = await service.getPostsByUser(userId);
 
-      const result = await service.getPostsByUser(userId);
-
-      expect(result).toEqual([]);
-    });
-
-    it('should throw NotFoundException when user does not exist', async () => {
-      await expect(
-        service.getPostsByUser('unknown-user'),
-      ).rejects.toBeInstanceOf(NotFoundException);
-    });
+          expect(result).toEqual([]);
+        },
+      },
+      {
+        description: 'should throw NotFoundException when user does not exist',
+        execute: async () => {
+          await expect(
+            service.getPostsByUser('unknown-user'),
+          ).rejects.toBeInstanceOf(NotFoundException);
+        },
+      },
+    ])('$description', ({ execute }) => execute());
   });
 
   describe('getRepostsByUser', () => {
     const userId = 'user-84';
 
-    it('should return reposted posts with repostedAt timestamp', async () => {
-      userRepository.seed([buildUser({ id: userId, username: 'user84' })]);
+    test.each([
+      {
+        description: 'should return reposted posts with repostedAt timestamp',
+        execute: async () => {
+          userRepository.seed([buildUser({ id: userId, username: 'user84' })]);
 
-      const recentRepost = buildRepostWithPost({
-        id: 'repost-new',
-        userId,
-        createdAt: new Date('2025-05-10T10:00:00.000Z'),
-        post: buildPostWithCounts({
-          id: 'post-900',
-          authorId: 'author-900',
-          content: 'Post original 900',
-          createdAt: new Date('2025-03-01T08:00:00.000Z'),
-        }),
-      });
+          const recentRepost = buildRepostWithPost({
+            id: 'repost-new',
+            userId,
+            createdAt: new Date('2025-05-10T10:00:00.000Z'),
+            post: buildPostWithCounts({
+              id: 'post-900',
+              authorId: 'author-900',
+              content: 'Post original 900',
+              createdAt: new Date('2025-03-01T08:00:00.000Z'),
+            }),
+          });
 
-      const olderRepost = buildRepostWithPost({
-        id: 'repost-old',
-        userId,
-        createdAt: new Date('2025-04-01T10:00:00.000Z'),
-        post: buildPostWithCounts({
-          id: 'post-800',
-          authorId: 'author-800',
-          content: 'Post original 800',
-          createdAt: new Date('2025-02-01T08:00:00.000Z'),
-        }),
-      });
+          const olderRepost = buildRepostWithPost({
+            id: 'repost-old',
+            userId,
+            createdAt: new Date('2025-04-01T10:00:00.000Z'),
+            post: buildPostWithCounts({
+              id: 'post-800',
+              authorId: 'author-800',
+              content: 'Post original 800',
+              createdAt: new Date('2025-02-01T08:00:00.000Z'),
+            }),
+          });
 
-      repository.seedUserReposts(userId, [recentRepost, olderRepost]);
+          repository.seedUserReposts(userId, [recentRepost, olderRepost]);
 
-      const result = await service.getRepostsByUser(userId);
+          const result = await service.getRepostsByUser(userId);
 
-      expect(result).toHaveLength(2);
-      expect(result[0]).toMatchObject({
-        id: 'post-900',
-        repostedAt: recentRepost.createdAt,
-        content: 'Post original 900',
-      });
-      expect(result[0].author).toMatchObject({ id: 'author-900' });
-      expect(result[1]).toMatchObject({
-        id: 'post-800',
-        repostedAt: olderRepost.createdAt,
-      });
-    });
+          expect(result).toHaveLength(2);
+          expect(result[0]).toMatchObject({
+            id: 'post-900',
+            repostedAt: recentRepost.createdAt,
+            content: 'Post original 900',
+          });
+          expect(result[0].author).toMatchObject({ id: 'author-900' });
+          expect(result[1]).toMatchObject({
+            id: 'post-800',
+            repostedAt: olderRepost.createdAt,
+          });
+        },
+      },
+      {
+        description: 'should return empty array when user has no reposts',
+        execute: async () => {
+          userRepository.seed([buildUser({ id: userId, username: 'user84' })]);
 
-    it('should return empty array when user has no reposts', async () => {
-      userRepository.seed([buildUser({ id: userId, username: 'user84' })]);
+          const result = await service.getRepostsByUser(userId);
 
-      const result = await service.getRepostsByUser(userId);
-
-      expect(result).toEqual([]);
-    });
-
-    it('should throw NotFoundException when user does not exist', async () => {
-      await expect(
-        service.getRepostsByUser('unknown-user'),
-      ).rejects.toBeInstanceOf(NotFoundException);
-    });
+          expect(result).toEqual([]);
+        },
+      },
+      {
+        description: 'should throw NotFoundException when user does not exist',
+        execute: async () => {
+          await expect(
+            service.getRepostsByUser('unknown-user'),
+          ).rejects.toBeInstanceOf(NotFoundException);
+        },
+      },
+    ])('$description', ({ execute }) => execute());
   });
 
   describe('getPostDetails', () => {
-    it('should return post details with comment tree', async () => {
-      const postId = 'post-42';
-      const post = buildPostWithCounts({
-        id: postId,
-        content: 'Post detalhado',
-        likeCount: 7,
-        commentCount: 3,
-      });
+    test.each([
+      {
+        description: 'should return post details with comment tree',
+        execute: async () => {
+          const postId = 'post-42';
+          const post = buildPostWithCounts({
+            id: postId,
+            content: 'Post detalhado',
+            likeCount: 7,
+            commentCount: 3,
+          });
 
-      const rootCommentNewer = buildCommentWithAuthor({
-        id: 'comment-2',
-        postId,
-        authorId: 'author-2',
-        content: 'Comentário mais recente',
-        createdAt: new Date('2025-01-03T12:00:00.000Z'),
-      });
+          const rootCommentNewer = buildCommentWithAuthor({
+            id: 'comment-2',
+            postId,
+            authorId: 'author-2',
+            content: 'Comentário mais recente',
+            createdAt: new Date('2025-01-03T12:00:00.000Z'),
+          });
 
-      const rootCommentOlder = buildCommentWithAuthor({
-        id: 'comment-1',
-        postId,
-        authorId: 'author-1',
-        content: 'Comentário mais antigo',
-        createdAt: new Date('2025-01-02T12:00:00.000Z'),
-      });
+          const rootCommentOlder = buildCommentWithAuthor({
+            id: 'comment-1',
+            postId,
+            authorId: 'author-1',
+            content: 'Comentário mais antigo',
+            createdAt: new Date('2025-01-02T12:00:00.000Z'),
+          });
 
-      const replyComment = buildCommentWithAuthor({
-        id: 'comment-3',
-        postId,
-        authorId: 'author-3',
-        content: 'Resposta ao comentário mais antigo',
-        createdAt: new Date('2025-01-02T12:30:00.000Z'),
-        parentId: 'comment-1',
-      });
+          const replyComment = buildCommentWithAuthor({
+            id: 'comment-3',
+            postId,
+            authorId: 'author-3',
+            content: 'Resposta ao comentário mais antigo',
+            createdAt: new Date('2025-01-02T12:30:00.000Z'),
+            parentId: 'comment-1',
+          });
 
-      repository.seedPostDetails(postId, post, [
-        rootCommentOlder,
-        replyComment,
-        rootCommentNewer,
-      ]);
+          repository.seedPostDetails(postId, post, [
+            rootCommentOlder,
+            replyComment,
+            rootCommentNewer,
+          ]);
 
-      const result = await service.getPostDetails(postId);
+          const result = await service.getPostDetails(postId);
 
-      expect(result).toMatchObject({
-        id: postId,
-        likeCount: 7,
-        commentCount: 3,
-        content: 'Post detalhado',
-      });
+          expect(result).toMatchObject({
+            id: postId,
+            likeCount: 7,
+            commentCount: 3,
+            content: 'Post detalhado',
+          });
 
-      expect(result.comments).toHaveLength(2);
-      expect(result.comments[0].id).toBe('comment-2'); // mais recente primeiro
-      expect(result.comments[1].id).toBe('comment-1');
-      expect(result.comments[1].replies).toHaveLength(1);
-      expect(result.comments[1].replies[0].id).toBe('comment-3');
-    });
-
-    it('should throw NotFoundException when post does not exist', async () => {
-      await expect(
-        service.getPostDetails('post-inexistente'),
-      ).rejects.toBeInstanceOf(NotFoundException);
-    });
+          expect(result.comments).toHaveLength(2);
+          expect(result.comments[0].id).toBe('comment-2');
+          expect(result.comments[1].id).toBe('comment-1');
+          expect(result.comments[1].replies).toHaveLength(1);
+          expect(result.comments[1].replies[0].id).toBe('comment-3');
+        },
+      },
+      {
+        description: 'should throw NotFoundException when post does not exist',
+        execute: async () => {
+          await expect(
+            service.getPostDetails('post-inexistente'),
+          ).rejects.toBeInstanceOf(NotFoundException);
+        },
+      },
+    ])('$description', ({ execute }) => execute());
   });
 
   describe('deletePost', () => {
@@ -490,24 +542,34 @@ describe('PostService', () => {
       repository.seedPosts([existingPost]);
     });
 
-    it('should delete post when current user is the author', async () => {
-      const result = await service.deletePost('post-99', 'author-99');
+    test.each([
+      {
+        description: 'should delete post when current user is the author',
+        execute: async () => {
+          const result = await service.deletePost('post-99', 'author-99');
 
-      expect(result).toMatchObject(existingPost);
-    });
+          expect(result).toMatchObject(existingPost);
+        },
+      },
+      {
+        description: 'should throw NotFoundException when post does not exist',
+        execute: async () => {
+          await repository.delete('post-99');
 
-    it('should throw NotFoundException when post does not exist', async () => {
-      await repository.delete('post-99');
-
-      await expect(
-        service.deletePost('post-99', 'author-99'),
-      ).rejects.toBeInstanceOf(NotFoundException);
-    });
-
-    it('should throw ForbiddenException when current user is not the author', async () => {
-      await expect(
-        service.deletePost('post-99', 'other-author'),
-      ).rejects.toBeInstanceOf(ForbiddenException);
-    });
+          await expect(
+            service.deletePost('post-99', 'author-99'),
+          ).rejects.toBeInstanceOf(NotFoundException);
+        },
+      },
+      {
+        description:
+          'should throw ForbiddenException when current user is not the author',
+        execute: async () => {
+          await expect(
+            service.deletePost('post-99', 'other-author'),
+          ).rejects.toBeInstanceOf(ForbiddenException);
+        },
+      },
+    ])('$description', ({ execute }) => execute());
   });
 });

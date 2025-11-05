@@ -6,11 +6,29 @@ services:
       - "3001:3001" # Mapeia a porta do contêiner para a sua máquina
     env_file:
       - .env # Carrega as variáveis de ambiente do arquivo .env
+    environment:
+      NODE_ENV: development
+      ENABLE_STARTUP_SEED: "true"
     volumes:
       # Espelha o código local para dentro do contêiner para hot-reload
       # Isso é SÓ para desenvolvimento.
       - .:/usr/src/app
       # Impede que a pasta node_modules local sobrescreva a de dentro do contêiner
+      - /usr/src/app/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
+
+  tests:
+    build: .
+    command: ["npm", "run", "test"]
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: test
+      ENABLE_STARTUP_SEED: "false"
+    volumes:
+      - .:/usr/src/app
       - /usr/src/app/node_modules
     depends_on:
       db:
