@@ -27,7 +27,7 @@ services:
     environment:
       NODE_ENV: test
       ENABLE_STARTUP_SEED: "false"
-      TEST_DATABASE_URL: "postgresql://user:password@db:5432/twitter_db?schema=public"
+      TEST_DATABASE_URL: "postgresql://user:password@db:5432/twitter_db?schema=test"
     volumes:
       - .:/usr/src/app
       - /usr/src/app/node_modules

@@ -141,7 +141,8 @@ cp .env.example .env
 
 # 2.1 Configure as variáveis de ambiente para testes de integração
 cp .env.test.example .env.test
-# ajuste o arquivo .env.test com a variável TEST_DATABASE_URL apontando para um banco isolado (ex.: localhost)
+# a URL padrão já aponta para o schema "test" (postgresql://.../twitter_db?schema=test)
+# mantenha esse schema ou utilize um database com sufixo _test para evitar limpar dados de desenvolvimento
 
 # 3. Execute o projeto (primeira vez) - Os testes de integração e unitários serão executados automaticamente
 docker-compose up --build
@@ -161,7 +162,9 @@ Após a inicialização, a aplicação estará disponível em:
 
 ### 🧪 Banco para Testes de Integração
 
-Os testes de integração executam contra um banco PostgreSQL real. Garanta que o arquivo `.env.test` (criado a partir do `.env.test.example`) esteja presente com a variável `TEST_DATABASE_URL` apontando para um banco isolado. Para execução **local**, aponte essa URL para `localhost`. Ao rodar via `docker compose`, esse valor é sobrescrito automaticamente para utilizar o hostname interno `db`, então não é necessário modificar o arquivo dentro do container.
+Os testes de integração executam contra um banco PostgreSQL real. Garanta que o arquivo `.env.test` (criado a partir do `.env.test.example`) esteja presente com a variável `TEST_DATABASE_URL` apontando para um banco isolado. Utilize preferencialmente `schema=test` (já definido por padrão) ou um banco com sufixo `_test`. Para execução **local**, aponte essa URL para `localhost`. Ao rodar via `docker compose`, esse valor é sobrescrito automaticamente para utilizar o hostname interno `db`, mas o schema/test database dedicado permanece o mesmo.
+
+> ⚠️ Por segurança, a suíte de integração bloqueia a limpeza do banco caso `TEST_DATABASE_URL` aponte para o schema `public` ou para o banco principal. Ajuste o schema ou nome do banco antes de rodar os testes.
 
 Se estiver usando o banco provisionado pelo `docker compose`, garanta que o serviço `db` esteja no ar:
 
