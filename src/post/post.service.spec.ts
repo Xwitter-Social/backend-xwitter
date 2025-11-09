@@ -8,15 +8,15 @@ import { PostService } from './post.service';
 import {
   CommentWithAuthor,
   IPostRepository,
-  PostWithAuthorAndCounts,
-  RepostWithPostAndCounts,
+  PostWithInteractions,
+  RepostWithPostInteractions,
 } from './interfaces/post-repository.interface';
 import { MockPostRepository } from './mocks/mock-post-repository';
 import { IUserRepository } from '../user/interfaces/user-repository.interface';
 import { MockUserRepository } from '../user/mocks/mock-user-repository';
 import { User } from '@prisma/client';
 
-const buildPostWithCounts = (params?: {
+const buildPostWithInteractions = (params?: {
   id?: string;
   content?: string;
   authorId?: string;
@@ -24,7 +24,10 @@ const buildPostWithCounts = (params?: {
   author?: { id: string; username: string; name: string };
   likeCount?: number;
   commentCount?: number;
-}): PostWithAuthorAndCounts => {
+  repostCount?: number;
+  likedByCurrentUser?: boolean;
+  repostedByCurrentUser?: { id: string } | null;
+}): PostWithInteractions => {
   const {
     id = 'post-1',
     content = 'Conteúdo de exemplo',
@@ -37,6 +40,9 @@ const buildPostWithCounts = (params?: {
     },
     likeCount = 0,
     commentCount = 0,
+    repostCount = 0,
+    likedByCurrentUser = false,
+    repostedByCurrentUser = null,
   } = params || {};
 
   return {
@@ -48,7 +54,17 @@ const buildPostWithCounts = (params?: {
     _count: {
       likes: likeCount,
       comments: commentCount,
+      reposts: repostCount,
     },
+    likes: likedByCurrentUser ? [{ userId: 'current-user' }] : [],
+    reposts: repostedByCurrentUser
+      ? [
+          {
+            id: repostedByCurrentUser.id,
+            userId: 'current-user',
+          },
+        ]
+      : [],
   };
 };
 
@@ -92,13 +108,13 @@ const buildRepostWithPost = (params?: {
   id?: string;
   userId?: string;
   createdAt?: Date;
-  post?: PostWithAuthorAndCounts;
-}): RepostWithPostAndCounts => {
+  post?: PostWithInteractions;
+}): RepostWithPostInteractions => {
   const {
     id = 'repost-1',
     userId = 'user-1',
     createdAt = new Date('2025-02-01T12:00:00.000Z'),
-    post = buildPostWithCounts(),
+    post = buildPostWithInteractions(),
   } = params || {};
 
   return {
@@ -213,7 +229,7 @@ describe('PostService', () => {
         description:
           'should map posts returned by repository to timeline DTOs preserving order',
         execute: async () => {
-          const firstPost = buildPostWithCounts({
+          const firstPost = buildPostWithInteractions({
             id: 'post-1',
             content: 'Primeiro post',
             createdAt: new Date('2025-01-02T08:00:00.000Z'),
@@ -221,7 +237,7 @@ describe('PostService', () => {
             commentCount: 2,
           });
 
-          const secondPost = buildPostWithCounts({
+          const secondPost = buildPostWithInteractions({
             id: 'post-2',
             content: 'Segundo post',
             createdAt: new Date('2025-01-01T12:00:00.000Z'),
@@ -249,6 +265,57 @@ describe('PostService', () => {
       },
       {
         description:
+          'should expose interaction flags and deletion capability for current user',
+        execute: async () => {
+          const currentUserId = 'current-user';
+
+          const interactivePost = buildPostWithInteractions({
+            id: 'post-liked',
+            authorId: 'author-2',
+            createdAt: new Date('2025-01-03T09:00:00.000Z'),
+            likeCount: 3,
+            commentCount: 1,
+            repostCount: 2,
+            likedByCurrentUser: true,
+            repostedByCurrentUser: { id: 'repost-123' },
+          });
+
+          const ownPost = buildPostWithInteractions({
+            id: 'post-own',
+            authorId: currentUserId,
+            createdAt: new Date('2025-01-02T09:00:00.000Z'),
+            likeCount: 0,
+            commentCount: 0,
+            repostCount: 0,
+          });
+
+          repository.seedTimeline(currentUserId, [interactivePost, ownPost]);
+
+          const result = await service.getTimeline(currentUserId);
+
+          expect(result[0]).toMatchObject({
+            id: 'post-liked',
+            likeCount: 3,
+            commentCount: 1,
+            repostCount: 2,
+            isLiked: true,
+            isReposted: true,
+            repostId: 'repost-123',
+            canDelete: false,
+          });
+
+          expect(result[1]).toMatchObject({
+            id: 'post-own',
+            canDelete: true,
+            isLiked: false,
+            isReposted: false,
+            repostId: null,
+            repostCount: 0,
+          });
+        },
+      },
+      {
+        description:
           'should return empty array when repository has no posts for user',
         execute: async () => {
           const result = await service.getTimeline('user-sem-posts');
@@ -260,21 +327,21 @@ describe('PostService', () => {
 
   describe('searchPosts', () => {
     const searchablePosts = [
-      buildPostWithCounts({
+      buildPostWithInteractions({
         id: 'post-201',
         content: 'Atualização de produto lançada hoje',
         createdAt: new Date('2025-03-10T08:00:00.000Z'),
         likeCount: 10,
         commentCount: 2,
       }),
-      buildPostWithCounts({
+      buildPostWithInteractions({
         id: 'post-202',
         content: 'Reflexões sobre produtividade remota',
         createdAt: new Date('2025-03-09T09:30:00.000Z'),
         likeCount: 4,
         commentCount: 1,
       }),
-      buildPostWithCounts({
+      buildPostWithInteractions({
         id: 'post-203',
         content: 'Checklist para lançamento de produto',
         createdAt: new Date('2025-03-08T18:45:00.000Z'),
@@ -339,12 +406,12 @@ describe('PostService', () => {
             buildUser({ id: userId, username: 'author42' }),
           ]);
 
-          const newerPost = buildPostWithCounts({
+          const newerPost = buildPostWithInteractions({
             id: 'post-new',
             authorId: userId,
             createdAt: new Date('2025-04-01T12:00:00.000Z'),
           });
-          const olderPost = buildPostWithCounts({
+          const olderPost = buildPostWithInteractions({
             id: 'post-old',
             authorId: userId,
             createdAt: new Date('2025-03-01T12:00:00.000Z'),
@@ -401,7 +468,7 @@ describe('PostService', () => {
             id: 'repost-new',
             userId,
             createdAt: new Date('2025-05-10T10:00:00.000Z'),
-            post: buildPostWithCounts({
+            post: buildPostWithInteractions({
               id: 'post-900',
               authorId: 'author-900',
               content: 'Post original 900',
@@ -413,7 +480,7 @@ describe('PostService', () => {
             id: 'repost-old',
             userId,
             createdAt: new Date('2025-04-01T10:00:00.000Z'),
-            post: buildPostWithCounts({
+            post: buildPostWithInteractions({
               id: 'post-800',
               authorId: 'author-800',
               content: 'Post original 800',
@@ -465,7 +532,7 @@ describe('PostService', () => {
         description: 'should return post details with comment tree',
         execute: async () => {
           const postId = 'post-42';
-          const post = buildPostWithCounts({
+          const post = buildPostWithInteractions({
             id: postId,
             content: 'Post detalhado',
             likeCount: 7,

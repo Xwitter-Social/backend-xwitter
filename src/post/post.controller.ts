@@ -61,8 +61,9 @@ export class PostController {
   @ApiSearchPosts()
   async searchPosts(
     @Query('search') query: string,
+    @CurrentUser() currentUser: CurrentUserData,
   ): Promise<TimelinePostDto[]> {
-    return this.postService.searchPosts(query);
+    return this.postService.searchPosts(query, currentUser.sub);
   }
 
   @UseGuards(AuthGuard)
@@ -70,8 +71,9 @@ export class PostController {
   @ApiGetUserPosts()
   async getPostsByUser(
     @Param('userId') userId: string,
+    @CurrentUser() currentUser: CurrentUserData,
   ): Promise<TimelinePostDto[]> {
-    return this.postService.getPostsByUser(userId);
+    return this.postService.getPostsByUser(userId, currentUser.sub);
   }
 
   @UseGuards(AuthGuard)
@@ -79,15 +81,19 @@ export class PostController {
   @ApiGetUserReposts()
   async getRepostsByUser(
     @Param('userId') userId: string,
+    @CurrentUser() currentUser: CurrentUserData,
   ): Promise<RepostTimelineDto[]> {
-    return this.postService.getRepostsByUser(userId);
+    return this.postService.getRepostsByUser(userId, currentUser.sub);
   }
 
   @UseGuards(AuthGuard)
   @Get(':id')
   @ApiGetPostDetails()
-  async getPostDetails(@Param('id') id: string): Promise<PostDetailsDto> {
-    return this.postService.getPostDetails(id);
+  async getPostDetails(
+    @Param('id') id: string,
+    @CurrentUser() currentUser: CurrentUserData,
+  ): Promise<PostDetailsDto> {
+    return this.postService.getPostDetails(id, currentUser.sub);
   }
 
   @UseGuards(AuthGuard)

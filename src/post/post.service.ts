@@ -9,7 +9,7 @@ import { CreatePostDto } from './dto';
 import {
   CommentWithAuthor,
   IPostRepository,
-  PostWithAuthorAndCounts,
+  PostWithInteractions,
 } from './interfaces/post-repository.interface';
 import { IUserRepository } from '../user/interfaces/user-repository.interface';
 
@@ -34,6 +34,11 @@ export interface TimelinePostDto {
   author: PostAuthorSummary;
   likeCount: number;
   commentCount: number;
+  repostCount: number;
+  isLiked: boolean;
+  isReposted: boolean;
+  repostId: string | null;
+  canDelete: boolean;
 }
 
 export interface PostDetailsDto extends TimelinePostDto {
@@ -80,39 +85,54 @@ export class PostService {
   async getTimeline(userId: string): Promise<TimelinePostDto[]> {
     const posts = await this.postRepo.getTimelinePosts(userId);
 
-    return posts.map((post) => this.mapPostToTimelineDto(post));
+    return posts.map((post) => this.mapPostToTimelineDto(post, userId));
   }
 
-  async getPostsByUser(userId: string): Promise<TimelinePostDto[]> {
+  async getPostsByUser(
+    userId: string,
+    currentUserId?: string,
+  ): Promise<TimelinePostDto[]> {
     await this.ensureUserExists(userId);
-    const posts = await this.postRepo.getPostsByAuthor(userId);
+    const posts = await this.postRepo.getPostsByAuthor(userId, currentUserId);
 
-    return posts.map((post) => this.mapPostToTimelineDto(post));
+    return posts.map((post) => this.mapPostToTimelineDto(post, currentUserId));
   }
 
-  async getRepostsByUser(userId: string): Promise<RepostTimelineDto[]> {
+  async getRepostsByUser(
+    userId: string,
+    currentUserId?: string,
+  ): Promise<RepostTimelineDto[]> {
     await this.ensureUserExists(userId);
-    const reposts = await this.postRepo.getRepostsByUser(userId);
+    const reposts = await this.postRepo.getRepostsByUser(userId, currentUserId);
 
     return reposts.map((repost) => ({
       repostedAt: repost.createdAt,
-      ...this.mapPostToTimelineDto(repost.post),
+      ...this.mapPostToTimelineDto(repost.post, currentUserId),
     }));
   }
 
-  async searchPosts(query: string): Promise<TimelinePostDto[]> {
+  async searchPosts(
+    query: string,
+    currentUserId?: string,
+  ): Promise<TimelinePostDto[]> {
     if (!query || !query.trim()) {
       return [];
     }
 
     const trimmedQuery = query.trim();
-    const posts = await this.postRepo.searchPosts(trimmedQuery);
+    const posts = await this.postRepo.searchPosts(trimmedQuery, currentUserId);
 
-    return posts.map((post) => this.mapPostToTimelineDto(post));
+    return posts.map((post) => this.mapPostToTimelineDto(post, currentUserId));
   }
 
-  async getPostDetails(postId: string): Promise<PostDetailsDto> {
-    const post = await this.postRepo.getPostWithAuthorAndCounts(postId);
+  async getPostDetails(
+    postId: string,
+    currentUserId?: string,
+  ): Promise<PostDetailsDto> {
+    const post = await this.postRepo.getPostWithAuthorAndCounts(
+      postId,
+      currentUserId,
+    );
 
     if (!post) {
       throw new NotFoundException('Post não encontrado.');
@@ -122,7 +142,7 @@ export class PostService {
     const commentsTree = this.buildCommentTree(comments);
 
     return {
-      ...this.mapPostToTimelineDto(post),
+      ...this.mapPostToTimelineDto(post, currentUserId),
       comments: commentsTree,
     };
   }
@@ -143,7 +163,13 @@ export class PostService {
     return this.postRepo.delete(postId);
   }
 
-  private mapPostToTimelineDto(post: PostWithAuthorAndCounts): TimelinePostDto {
+  private mapPostToTimelineDto(
+    post: PostWithInteractions,
+    currentUserId?: string,
+  ): TimelinePostDto {
+    const currentUserLike = post.likes?.[0];
+    const currentUserRepost = post.reposts?.[0];
+
     return {
       id: post.id,
       content: post.content,
@@ -151,6 +177,11 @@ export class PostService {
       author: post.author,
       likeCount: post._count.likes,
       commentCount: post._count.comments,
+      repostCount: post._count.reposts ?? 0,
+      isLiked: Boolean(currentUserLike),
+      isReposted: Boolean(currentUserRepost),
+      repostId: currentUserRepost?.id ?? null,
+      canDelete: currentUserId ? post.authorId === currentUserId : false,
     };
   }
 

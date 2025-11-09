@@ -4,6 +4,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Matches,
   MinLength,
   MaxLength,
 } from 'class-validator';
@@ -38,6 +39,18 @@ export class CreateUserDto {
   @IsNotEmpty({ message: 'Senha é obrigatória' })
   @IsString({ message: 'Senha deve ser uma string' })
   @MinLength(8, { message: 'Senha deve ter pelo menos 8 caracteres' })
+  @Matches(/[A-Z]/, {
+    message: 'Senha deve conter pelo menos uma letra maiúscula',
+  })
+  @Matches(/[a-z]/, {
+    message: 'Senha deve conter pelo menos uma letra minúscula',
+  })
+  @Matches(/[0-9]/, {
+    message: 'Senha deve conter pelo menos um número',
+  })
+  @Matches(/[!@#$%^&*(),.?":{}|<>]/, {
+    message: 'Senha deve conter pelo menos um símbolo',
+  })
   password: string;
 
   @ApiProperty({
@@ -55,5 +68,6 @@ export class CreateUserDto {
   })
   @IsOptional()
   @IsString({ message: 'Bio deve ser uma string' })
+  @MaxLength(160, { message: 'Bio deve ter no máximo 160 caracteres' })
   bio?: string;
 }

@@ -13,10 +13,21 @@ export type PostWithAuthorAndCounts = Prisma.PostGetPayload<{
       select: {
         likes: true;
         comments: true;
+        reposts: true;
       };
     };
   };
 }>;
+
+export type PostWithInteractions = PostWithAuthorAndCounts & {
+  likes?: Array<{
+    userId: string;
+  }>;
+  reposts?: Array<{
+    id: string;
+    userId: string;
+  }>;
+};
 
 export type CommentWithAuthor = Prisma.CommentGetPayload<{
   include: {
@@ -45,6 +56,7 @@ export type RepostWithPostAndCounts = Prisma.RepostGetPayload<{
           select: {
             likes: true;
             comments: true;
+            reposts: true;
           };
         };
       };
@@ -52,16 +64,33 @@ export type RepostWithPostAndCounts = Prisma.RepostGetPayload<{
   };
 }>;
 
+export type RepostWithPostInteractions = Omit<
+  RepostWithPostAndCounts,
+  'post'
+> & {
+  post: PostWithInteractions;
+};
+
 export abstract class IPostRepository {
   abstract create(data: Prisma.PostCreateInput): Promise<Post>;
   abstract findById(postId: string): Promise<Post | null>;
   abstract delete(postId: string): Promise<Post>;
-  abstract getTimelinePosts(userId: string): Promise<PostWithAuthorAndCounts[]>;
+  abstract getTimelinePosts(userId: string): Promise<PostWithInteractions[]>;
   abstract getPostWithAuthorAndCounts(
     postId: string,
-  ): Promise<PostWithAuthorAndCounts | null>;
+    currentUserId?: string,
+  ): Promise<PostWithInteractions | null>;
   abstract getCommentsByPostId(postId: string): Promise<CommentWithAuthor[]>;
-  abstract searchPosts(query: string): Promise<PostWithAuthorAndCounts[]>;
-  abstract getPostsByAuthor(userId: string): Promise<PostWithAuthorAndCounts[]>;
-  abstract getRepostsByUser(userId: string): Promise<RepostWithPostAndCounts[]>;
+  abstract searchPosts(
+    query: string,
+    currentUserId?: string,
+  ): Promise<PostWithInteractions[]>;
+  abstract getPostsByAuthor(
+    userId: string,
+    currentUserId?: string,
+  ): Promise<PostWithInteractions[]>;
+  abstract getRepostsByUser(
+    userId: string,
+    currentUserId?: string,
+  ): Promise<RepostWithPostInteractions[]>;
 }

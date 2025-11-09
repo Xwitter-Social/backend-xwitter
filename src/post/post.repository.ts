@@ -4,8 +4,8 @@ import { PrismaService } from 'src/database/prisma.service';
 import {
   CommentWithAuthor,
   IPostRepository,
-  PostWithAuthorAndCounts,
-  RepostWithPostAndCounts,
+  PostWithInteractions,
+  RepostWithPostInteractions,
 } from './interfaces/post-repository.interface';
 
 const authorSelect = {
@@ -17,6 +17,33 @@ const authorSelect = {
 @Injectable()
 export class PostRepository implements IPostRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  private getPostInclude(currentUserId?: string): Prisma.PostInclude {
+    const include: Prisma.PostInclude = {
+      author: { select: authorSelect },
+      _count: {
+        select: {
+          likes: true,
+          comments: true,
+          reposts: true,
+        },
+      },
+    };
+
+    if (currentUserId) {
+      include.likes = {
+        where: { userId: currentUserId },
+        select: { userId: true },
+      };
+
+      include.reposts = {
+        where: { userId: currentUserId },
+        select: { id: true, userId: true },
+      };
+    }
+
+    return include;
+  }
 
   async create(data: Prisma.PostCreateInput): Promise<Post> {
     return this.prisma.post.create({ data });
@@ -30,7 +57,7 @@ export class PostRepository implements IPostRepository {
     return this.prisma.post.delete({ where: { id: postId } });
   }
 
-  async getTimelinePosts(userId: string): Promise<PostWithAuthorAndCounts[]> {
+  async getTimelinePosts(userId: string): Promise<PostWithInteractions[]> {
     const followings = await this.prisma.follow.findMany({
       where: { followerId: userId },
       select: { followingId: true },
@@ -47,33 +74,18 @@ export class PostRepository implements IPostRepository {
     return this.prisma.post.findMany({
       where: { authorId: { in: authorIds } },
       orderBy: { createdAt: 'desc' },
-      include: {
-        author: { select: authorSelect },
-        _count: {
-          select: {
-            likes: true,
-            comments: true,
-          },
-        },
-      },
-    });
+      include: this.getPostInclude(userId),
+    }) as Promise<PostWithInteractions[]>;
   }
 
   async getPostWithAuthorAndCounts(
     postId: string,
-  ): Promise<PostWithAuthorAndCounts | null> {
+    currentUserId?: string,
+  ): Promise<PostWithInteractions | null> {
     return this.prisma.post.findUnique({
       where: { id: postId },
-      include: {
-        author: { select: authorSelect },
-        _count: {
-          select: {
-            likes: true,
-            comments: true,
-          },
-        },
-      },
-    });
+      include: this.getPostInclude(currentUserId),
+    }) as Promise<PostWithInteractions | null>;
   }
 
   async getCommentsByPostId(postId: string): Promise<CommentWithAuthor[]> {
@@ -86,7 +98,10 @@ export class PostRepository implements IPostRepository {
     });
   }
 
-  async searchPosts(query: string): Promise<PostWithAuthorAndCounts[]> {
+  async searchPosts(
+    query: string,
+    currentUserId?: string,
+  ): Promise<PostWithInteractions[]> {
     return this.prisma.post.findMany({
       where: {
         content: {
@@ -95,52 +110,34 @@ export class PostRepository implements IPostRepository {
         },
       },
       orderBy: { createdAt: 'desc' },
-      include: {
-        author: { select: authorSelect },
-        _count: {
-          select: {
-            likes: true,
-            comments: true,
-          },
-        },
-      },
+      include: this.getPostInclude(currentUserId),
       take: 50,
-    });
+    }) as Promise<PostWithInteractions[]>;
   }
 
-  async getPostsByAuthor(userId: string): Promise<PostWithAuthorAndCounts[]> {
+  async getPostsByAuthor(
+    userId: string,
+    currentUserId?: string,
+  ): Promise<PostWithInteractions[]> {
     return this.prisma.post.findMany({
       where: { authorId: userId },
       orderBy: { createdAt: 'desc' },
-      include: {
-        author: { select: authorSelect },
-        _count: {
-          select: {
-            likes: true,
-            comments: true,
-          },
-        },
-      },
-    });
+      include: this.getPostInclude(currentUserId),
+    }) as Promise<PostWithInteractions[]>;
   }
 
-  async getRepostsByUser(userId: string): Promise<RepostWithPostAndCounts[]> {
+  async getRepostsByUser(
+    userId: string,
+    currentUserId?: string,
+  ): Promise<RepostWithPostInteractions[]> {
     return this.prisma.repost.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
       include: {
         post: {
-          include: {
-            author: { select: authorSelect },
-            _count: {
-              select: {
-                likes: true,
-                comments: true,
-              },
-            },
-          },
+          include: this.getPostInclude(currentUserId),
         },
       },
-    });
+    }) as Promise<RepostWithPostInteractions[]>;
   }
 }

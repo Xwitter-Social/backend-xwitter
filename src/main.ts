@@ -4,6 +4,16 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const allowedOrigins = process.env.FRONTEND_URL
+    ? process.env.FRONTEND_URL.split(',')
+        .map((origin) => origin.trim())
+        .filter(Boolean)
+    : undefined;
+
+  app.enableCors({
+    origin: allowedOrigins && allowedOrigins.length > 0 ? allowedOrigins : true,
+    credentials: true,
+  });
 
   // Configuração do Swagger
   const config = new DocumentBuilder()

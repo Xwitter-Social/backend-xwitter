@@ -2,36 +2,58 @@ import { Post, Prisma } from '@prisma/client';
 import {
   CommentWithAuthor,
   IPostRepository,
-  PostWithAuthorAndCounts,
-  RepostWithPostAndCounts,
+  PostWithInteractions,
+  RepostWithPostInteractions,
 } from '../interfaces/post-repository.interface';
 
 interface TimelineStore {
   userId: string;
-  posts: PostWithAuthorAndCounts[];
+  posts: PostWithInteractions[];
 }
 
 interface PostDetailStore {
   postId: string;
-  post: PostWithAuthorAndCounts;
+  post: PostWithInteractions;
   comments: CommentWithAuthor[];
 }
 
 interface UserPostsStore {
   userId: string;
-  posts: PostWithAuthorAndCounts[];
+  posts: PostWithInteractions[];
 }
 
 interface UserRepostsStore {
   userId: string;
-  reposts: RepostWithPostAndCounts[];
+  reposts: RepostWithPostInteractions[];
 }
+
+const clonePost = (post: PostWithInteractions): PostWithInteractions => ({
+  ...post,
+  author: { ...post.author },
+  _count: { ...post._count },
+  likes: post.likes ? post.likes.map((like) => ({ ...like })) : undefined,
+  reposts: post.reposts
+    ? post.reposts.map((repost) => ({ ...repost }))
+    : undefined,
+});
+
+const cloneComment = (comment: CommentWithAuthor): CommentWithAuthor => ({
+  ...comment,
+  author: { ...comment.author },
+});
+
+const cloneRepost = (
+  repost: RepostWithPostInteractions,
+): RepostWithPostInteractions => ({
+  ...repost,
+  post: clonePost(repost.post),
+});
 
 export class MockPostRepository implements IPostRepository {
   private posts: Post[] = [];
   private timelineStore: TimelineStore[] = [];
   private postDetailStore: PostDetailStore[] = [];
-  private searchStore: PostWithAuthorAndCounts[] = [];
+  private searchStore: PostWithInteractions[] = [];
   private userPostsStore: UserPostsStore[] = [];
   private userRepostsStore: UserRepostsStore[] = [];
   private idSequence = 1;
@@ -70,60 +92,62 @@ export class MockPostRepository implements IPostRepository {
     return Promise.resolve(deleted);
   }
 
-  getTimelinePosts(userId: string): Promise<PostWithAuthorAndCounts[]> {
+  getTimelinePosts(userId: string): Promise<PostWithInteractions[]> {
     const stored = this.timelineStore.find((entry) => entry.userId === userId);
-    return Promise.resolve(stored ? stored.posts : []);
+    return Promise.resolve(stored ? stored.posts.map(clonePost) : []);
   }
 
   getPostWithAuthorAndCounts(
     postId: string,
-  ): Promise<PostWithAuthorAndCounts | null> {
+    currentUserId?: string,
+  ): Promise<PostWithInteractions | null> {
+    void currentUserId;
     const stored = this.postDetailStore.find(
       (entry) => entry.postId === postId,
     );
-    return Promise.resolve(stored ? stored.post : null);
+    return Promise.resolve(stored ? clonePost(stored.post) : null);
   }
 
   getCommentsByPostId(postId: string): Promise<CommentWithAuthor[]> {
     const stored = this.postDetailStore.find(
       (entry) => entry.postId === postId,
     );
-    return Promise.resolve(stored ? stored.comments : []);
+    return Promise.resolve(stored ? stored.comments.map(cloneComment) : []);
   }
 
-  searchPosts(query: string): Promise<PostWithAuthorAndCounts[]> {
+  searchPosts(
+    query: string,
+    currentUserId?: string,
+  ): Promise<PostWithInteractions[]> {
+    void currentUserId;
     const normalizedQuery = query.toLowerCase();
 
     const matches = this.searchStore.filter((post) =>
       post.content.toLowerCase().includes(normalizedQuery),
     );
 
-    return Promise.resolve(
-      matches.map((post) => ({
-        ...post,
-        author: { ...post.author },
-        _count: { ...post._count },
-      })),
-    );
+    return Promise.resolve(matches.map(clonePost));
   }
 
-  getPostsByAuthor(userId: string): Promise<PostWithAuthorAndCounts[]> {
+  getPostsByAuthor(
+    userId: string,
+    currentUserId?: string,
+  ): Promise<PostWithInteractions[]> {
+    void currentUserId;
     const stored = this.userPostsStore.find((entry) => entry.userId === userId);
 
     if (!stored) {
       return Promise.resolve([]);
     }
 
-    return Promise.resolve(
-      stored.posts.map((post) => ({
-        ...post,
-        author: { ...post.author },
-        _count: { ...post._count },
-      })),
-    );
+    return Promise.resolve(stored.posts.map(clonePost));
   }
 
-  getRepostsByUser(userId: string): Promise<RepostWithPostAndCounts[]> {
+  getRepostsByUser(
+    userId: string,
+    currentUserId?: string,
+  ): Promise<RepostWithPostInteractions[]> {
+    void currentUserId;
     const stored = this.userRepostsStore.find(
       (entry) => entry.userId === userId,
     );
@@ -132,32 +156,19 @@ export class MockPostRepository implements IPostRepository {
       return Promise.resolve([]);
     }
 
-    return Promise.resolve(
-      stored.reposts.map((repost) => ({
-        ...repost,
-        post: {
-          ...repost.post,
-          author: { ...repost.post.author },
-          _count: { ...repost.post._count },
-        },
-      })),
-    );
+    return Promise.resolve(stored.reposts.map(cloneRepost));
   }
 
   seedPosts(posts: Post[]): void {
     this.posts = posts.map((post) => ({ ...post }));
   }
 
-  seedTimeline(userId: string, posts: PostWithAuthorAndCounts[]): void {
+  seedTimeline(userId: string, posts: PostWithInteractions[]): void {
     const existingIndex = this.timelineStore.findIndex(
       (entry) => entry.userId === userId,
     );
 
-    const clonedPosts = posts.map((post) => ({
-      ...post,
-      author: { ...post.author },
-      _count: { ...post._count },
-    }));
+    const clonedPosts = posts.map((post) => clonePost(post));
 
     if (existingIndex >= 0) {
       this.timelineStore[existingIndex] = { userId, posts: clonedPosts };
@@ -168,19 +179,11 @@ export class MockPostRepository implements IPostRepository {
 
   seedPostDetails(
     postId: string,
-    post: PostWithAuthorAndCounts,
+    post: PostWithInteractions,
     comments: CommentWithAuthor[],
   ): void {
-    const clonedPost = {
-      ...post,
-      author: { ...post.author },
-      _count: { ...post._count },
-    };
-
-    const clonedComments = comments.map((comment) => ({
-      ...comment,
-      author: { ...comment.author },
-    }));
+    const clonedPost = clonePost(post);
+    const clonedComments = comments.map(cloneComment);
 
     const existingIndex = this.postDetailStore.findIndex(
       (entry) => entry.postId === postId,
@@ -199,20 +202,12 @@ export class MockPostRepository implements IPostRepository {
     }
   }
 
-  seedPostSearch(posts: PostWithAuthorAndCounts[]): void {
-    this.searchStore = posts.map((post) => ({
-      ...post,
-      author: { ...post.author },
-      _count: { ...post._count },
-    }));
+  seedPostSearch(posts: PostWithInteractions[]): void {
+    this.searchStore = posts.map(clonePost);
   }
 
-  seedUserPosts(userId: string, posts: PostWithAuthorAndCounts[]): void {
-    const clonedPosts = posts.map((post) => ({
-      ...post,
-      author: { ...post.author },
-      _count: { ...post._count },
-    }));
+  seedUserPosts(userId: string, posts: PostWithInteractions[]): void {
+    const clonedPosts = posts.map(clonePost);
 
     const existingIndex = this.userPostsStore.findIndex(
       (entry) => entry.userId === userId,
@@ -230,15 +225,8 @@ export class MockPostRepository implements IPostRepository {
     }
   }
 
-  seedUserReposts(userId: string, reposts: RepostWithPostAndCounts[]): void {
-    const clonedReposts = reposts.map((repost) => ({
-      ...repost,
-      post: {
-        ...repost.post,
-        author: { ...repost.post.author },
-        _count: { ...repost.post._count },
-      },
-    }));
+  seedUserReposts(userId: string, reposts: RepostWithPostInteractions[]): void {
+    const clonedReposts = reposts.map(cloneRepost);
 
     const existingIndex = this.userRepostsStore.findIndex(
       (entry) => entry.userId === userId,
