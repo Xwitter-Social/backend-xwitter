@@ -156,4 +156,10 @@ export class ConversationRepository implements IConversationRepository {
       },
     });
   }
+
+  async deleteConversation(conversationId: string): Promise<void> {
+    await this.prisma.conversation.delete({
+      where: { id: conversationId },
+    });
+  }
 }

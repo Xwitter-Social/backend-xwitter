@@ -252,9 +252,15 @@ describe('ConversationService', () => {
             },
           ]);
 
-          await expect(
-            service.getConversationsForUser(currentUser.id),
-          ).rejects.toBeInstanceOf(NotFoundException);
+          const result = await service.getConversationsForUser(currentUser.id);
+
+          expect(result).toHaveLength(0);
+
+          const storedAfterCleanup =
+            await conversationRepository.listConversationsByUser(
+              currentUser.id,
+            );
+          expect(storedAfterCleanup).toHaveLength(0);
         },
       },
     ])('$description', async ({ execute }) => {
@@ -328,6 +334,34 @@ describe('ConversationService', () => {
           await expect(
             service.getMessagesForConversation('intruder', 'conversation-40'),
           ).rejects.toBeInstanceOf(ForbiddenException);
+        },
+      },
+      {
+        description:
+          'should treat conversation without other participants as not found',
+        execute: async () => {
+          const currentUser = buildParticipant('user-1');
+
+          conversationRepository.seedParticipants([currentUser]);
+          conversationRepository.seedConversations([
+            {
+              id: 'conversation-41',
+              participants: [currentUser],
+            },
+          ]);
+
+          await expect(
+            service.getMessagesForConversation(
+              currentUser.id,
+              'conversation-41',
+            ),
+          ).rejects.toBeInstanceOf(NotFoundException);
+
+          const conversationsAfterCleanup =
+            await conversationRepository.listConversationsByUser(
+              currentUser.id,
+            );
+          expect(conversationsAfterCleanup).toHaveLength(0);
         },
       },
     ])('$description', async ({ execute }) => {

@@ -79,20 +79,21 @@ export class ConversationService {
     const conversations =
       await this.conversationRepository.listConversationsByUser(currentUserId);
 
-    return conversations.map((conversation) => {
+    const summaries: ConversationSummary[] = [];
+
+    for (const conversation of conversations) {
       const otherParticipant = conversation.participants.find(
         (participant) => participant.id !== currentUserId,
       );
 
       if (!otherParticipant) {
-        throw new NotFoundException(
-          'Conversa inválida: participante não encontrado.',
-        );
+        await this.removeConversation(conversation.id);
+        continue;
       }
 
       const lastMessage = conversation.messages.at(0) ?? null;
 
-      return {
+      summaries.push({
         id: conversation.id,
         updatedAt: conversation.updatedAt,
         participant: {
@@ -112,8 +113,10 @@ export class ConversationService {
               },
             }
           : null,
-      };
-    });
+      });
+    }
+
+    return summaries;
   }
 
   async getMessagesForConversation(
@@ -191,6 +194,15 @@ export class ConversationService {
       throw new ForbiddenException('Você não possui acesso a esta conversa.');
     }
 
+    const otherParticipants = conversation.participants.filter(
+      (participant) => participant.id !== userId,
+    );
+
+    if (otherParticipants.length === 0) {
+      await this.removeConversation(conversationId);
+      return null;
+    }
+
     return {
       id: conversation.id,
       participants: conversation.participants.map((participant) => ({
@@ -199,5 +211,13 @@ export class ConversationService {
         name: participant.name,
       })),
     };
+  }
+
+  private async removeConversation(conversationId: string): Promise<void> {
+    try {
+      await this.conversationRepository.deleteConversation(conversationId);
+    } catch {
+      // Ignore deletion errors (conversation might already be removed)
+    }
   }
 }

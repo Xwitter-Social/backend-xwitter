@@ -131,6 +131,18 @@ export class MockConversationRepository implements IConversationRepository {
     return Promise.resolve(messages);
   }
 
+  deleteConversation(conversationId: string): Promise<void> {
+    this.conversations = this.conversations.filter(
+      (conversation) => conversation.id !== conversationId,
+    );
+
+    this.messages = this.messages.filter(
+      (message) => message.conversationId !== conversationId,
+    );
+
+    return Promise.resolve();
+  }
+
   seedParticipants(participants: Participant[]): void {
     this.participantDirectory.clear();
     participants.forEach((participant) => {
@@ -181,6 +193,7 @@ export class MockConversationRepository implements IConversationRepository {
     this.messages = [];
     this.conversationSequence = 1;
     this.messageSequence = 1;
+    this.participantDirectory.clear();
   }
 
   private hasParticipants(

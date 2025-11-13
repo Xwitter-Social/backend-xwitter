@@ -77,4 +77,6 @@ export abstract class IConversationRepository {
   ): Promise<MessageWithAuthor>;
 
   abstract getMessages(conversationId: string): Promise<MessageWithAuthor[]>;
+
+  abstract deleteConversation(conversationId: string): Promise<void>;
 }
