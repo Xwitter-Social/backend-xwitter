@@ -39,6 +39,8 @@ export interface TimelinePostDto {
   isReposted: boolean;
   repostId: string | null;
   canDelete: boolean;
+  repostedAt: Date | null;
+  repostedBy: PostAuthorSummary | null;
 }
 
 export interface PostDetailsDto extends TimelinePostDto {
@@ -87,9 +89,31 @@ export class PostService {
   }
 
   async getTimeline(userId: string): Promise<TimelinePostDto[]> {
-    const posts = await this.postRepo.getTimelinePosts(userId);
+    const [posts, reposts] = await Promise.all([
+      this.postRepo.getTimelinePosts(userId),
+      this.postRepo.getTimelineReposts(userId, userId),
+    ]);
 
-    return posts.map((post) => this.mapPostToTimelineDto(post, userId));
+    const timelineEntries = [
+      ...posts.map((post) => ({
+        timestamp: post.createdAt,
+        data: this.mapPostToTimelineDto(post, userId),
+      })),
+      ...reposts.map((repost) => ({
+        timestamp: repost.createdAt,
+        data: this.mapPostToTimelineDto(repost.post, userId, {
+          repostedAt: repost.createdAt,
+          repostedBy: repost.user,
+        }),
+      })),
+    ];
+
+    return timelineEntries
+      .sort(
+        (first, second) =>
+          second.timestamp.getTime() - first.timestamp.getTime(),
+      )
+      .map((entry) => entry.data);
   }
 
   async getPostsByUser(
@@ -110,8 +134,11 @@ export class PostService {
     const reposts = await this.postRepo.getRepostsByUser(userId, currentUserId);
 
     return reposts.map((repost) => ({
+      ...this.mapPostToTimelineDto(repost.post, currentUserId, {
+        repostedAt: repost.createdAt,
+        repostedBy: repost.user,
+      }),
       repostedAt: repost.createdAt,
-      ...this.mapPostToTimelineDto(repost.post, currentUserId),
     }));
   }
 
@@ -186,6 +213,10 @@ export class PostService {
   private mapPostToTimelineDto(
     post: PostWithInteractions,
     currentUserId?: string,
+    metadata?: {
+      repostedAt?: Date | null;
+      repostedBy?: PostAuthorSummary | null;
+    },
   ): TimelinePostDto {
     const currentUserLike = post.likes?.[0];
     const currentUserRepost = post.reposts?.[0];
@@ -202,6 +233,8 @@ export class PostService {
       isReposted: Boolean(currentUserRepost),
       repostId: currentUserRepost?.id ?? null,
       canDelete: currentUserId ? post.authorId === currentUserId : false,
+      repostedAt: metadata?.repostedAt ?? null,
+      repostedBy: metadata?.repostedBy ? { ...metadata.repostedBy } : null,
     };
   }
 

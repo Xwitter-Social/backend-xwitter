@@ -24,11 +24,13 @@ export async function createTestUser(
 export async function createTestPost(params: {
   authorId: string;
   content?: string;
+  createdAt?: Date;
 }) {
   return prisma.post.create({
     data: {
       authorId: params.authorId,
       content: params.content ?? 'Hello world! 🐦',
+      createdAt: params.createdAt,
     },
   });
 }
@@ -51,6 +53,20 @@ export async function createTestLike(params: {
   createdAt?: Date;
 }) {
   return prisma.like.create({
+    data: {
+      userId: params.userId,
+      postId: params.postId,
+      createdAt: params.createdAt,
+    },
+  });
+}
+
+export async function createTestRepost(params: {
+  userId: string;
+  postId: string;
+  createdAt?: Date;
+}) {
+  return prisma.repost.create({
     data: {
       userId: params.userId,
       postId: params.postId,

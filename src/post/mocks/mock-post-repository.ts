@@ -12,6 +12,11 @@ interface TimelineStore {
   posts: PostWithInteractions[];
 }
 
+interface TimelineRepostsStore {
+  userId: string;
+  reposts: RepostWithPostInteractions[];
+}
+
 interface PostDetailStore {
   postId: string;
   post: PostWithInteractions;
@@ -52,12 +57,14 @@ const cloneRepost = (
   repost: RepostWithPostInteractions,
 ): RepostWithPostInteractions => ({
   ...repost,
+  user: { ...repost.user },
   post: clonePost(repost.post),
 });
 
 export class MockPostRepository implements IPostRepository {
   private posts: Post[] = [];
   private timelineStore: TimelineStore[] = [];
+  private timelineRepostsStore: TimelineRepostsStore[] = [];
   private postDetailStore: PostDetailStore[] = [];
   private searchStore: PostWithInteractions[] = [];
   private userPostsStore: UserPostsStore[] = [];
@@ -102,6 +109,17 @@ export class MockPostRepository implements IPostRepository {
   getTimelinePosts(userId: string): Promise<PostWithInteractions[]> {
     const stored = this.timelineStore.find((entry) => entry.userId === userId);
     return Promise.resolve(stored ? stored.posts.map(clonePost) : []);
+  }
+
+  getTimelineReposts(
+    userId: string,
+    currentUserId?: string,
+  ): Promise<RepostWithPostInteractions[]> {
+    void currentUserId;
+    const stored = this.timelineRepostsStore.find(
+      (entry) => entry.userId === userId,
+    );
+    return Promise.resolve(stored ? stored.reposts.map(cloneRepost) : []);
   }
 
   getPostWithAuthorAndCounts(
@@ -203,6 +221,26 @@ export class MockPostRepository implements IPostRepository {
     }
   }
 
+  seedTimelineReposts(
+    userId: string,
+    reposts: RepostWithPostInteractions[],
+  ): void {
+    const existingIndex = this.timelineRepostsStore.findIndex(
+      (entry) => entry.userId === userId,
+    );
+
+    const clonedReposts = reposts.map((repost) => cloneRepost(repost));
+
+    if (existingIndex >= 0) {
+      this.timelineRepostsStore[existingIndex] = {
+        userId,
+        reposts: clonedReposts,
+      };
+    } else {
+      this.timelineRepostsStore.push({ userId, reposts: clonedReposts });
+    }
+  }
+
   seedPostDetails(
     postId: string,
     post: PostWithInteractions,
@@ -295,6 +333,7 @@ export class MockPostRepository implements IPostRepository {
   clear(): void {
     this.posts = [];
     this.timelineStore = [];
+    this.timelineRepostsStore = [];
     this.postDetailStore = [];
     this.searchStore = [];
     this.userPostsStore = [];

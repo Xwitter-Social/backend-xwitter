@@ -43,6 +43,13 @@ export type CommentWithAuthor = Prisma.CommentGetPayload<{
 
 export type RepostWithPostAndCounts = Prisma.RepostGetPayload<{
   include: {
+    user: {
+      select: {
+        id: true;
+        username: true;
+        name: true;
+      };
+    };
     post: {
       include: {
         author: {
@@ -95,6 +102,10 @@ export abstract class IPostRepository {
     currentUserId?: string,
   ): Promise<PostWithInteractions[]>;
   abstract getRepostsByUser(
+    userId: string,
+    currentUserId?: string,
+  ): Promise<RepostWithPostInteractions[]>;
+  abstract getTimelineReposts(
     userId: string,
     currentUserId?: string,
   ): Promise<RepostWithPostInteractions[]>;

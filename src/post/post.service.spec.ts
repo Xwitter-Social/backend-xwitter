@@ -109,12 +109,18 @@ const buildRepostWithPost = (params?: {
   userId?: string;
   createdAt?: Date;
   post?: PostWithInteractions;
+  user?: { id: string; username: string; name: string };
 }): RepostWithPostInteractions => {
   const {
     id = 'repost-1',
     userId = 'user-1',
     createdAt = new Date('2025-02-01T12:00:00.000Z'),
     post = buildPostWithInteractions(),
+    user = {
+      id: userId,
+      username: `${userId}-username`,
+      name: `${userId}-name`,
+    },
   } = params || {};
 
   return {
@@ -122,6 +128,7 @@ const buildRepostWithPost = (params?: {
     userId,
     postId: post.id,
     createdAt,
+    user,
     post,
   };
 };
@@ -322,6 +329,60 @@ describe('PostService', () => {
           expect(result).toEqual([]);
         },
       },
+      {
+        description:
+          'should include repost entries alongside posts ordered by timeline date',
+        execute: async () => {
+          const currentUserId = 'timeline-user';
+
+          const directPost = buildPostWithInteractions({
+            id: 'direct-post',
+            authorId: 'followed-user',
+            createdAt: new Date('2025-02-01T11:00:00.000Z'),
+            content: 'Post direto mais recente',
+          });
+
+          const repostedContent = buildPostWithInteractions({
+            id: 'reposted-post',
+            authorId: 'original-author',
+            createdAt: new Date('2025-01-31T08:00:00.000Z'),
+            content: 'Conteúdo repostado',
+          });
+
+          const repostEvent = buildRepostWithPost({
+            id: 'repost-event',
+            userId: 'friend-user',
+            createdAt: new Date('2025-02-01T12:00:00.000Z'),
+            post: repostedContent,
+            user: {
+              id: 'friend-user',
+              username: 'friend_username',
+              name: 'Friend User',
+            },
+          });
+
+          repository.seedTimeline(currentUserId, [directPost]);
+          repository.seedTimelineReposts(currentUserId, [repostEvent]);
+
+          const result = await service.getTimeline(currentUserId);
+
+          expect(result).toHaveLength(2);
+          expect(result[0]).toMatchObject({
+            id: 'reposted-post',
+            repostedAt: repostEvent.createdAt,
+            repostedBy: {
+              id: 'friend-user',
+              username: 'friend_username',
+            },
+          });
+          expect(result[0].repostedBy?.name).toBe('Friend User');
+          expect(result[1]).toMatchObject({
+            id: 'direct-post',
+            repostedAt: null,
+            repostedBy: null,
+          });
+        },
+      },
     ])('$description', ({ execute }) => execute());
   });
 
@@ -497,11 +558,17 @@ describe('PostService', () => {
             id: 'post-900',
             repostedAt: recentRepost.createdAt,
             content: 'Post original 900',
+            repostedBy: {
+              id: userId,
+            },
           });
           expect(result[0].author).toMatchObject({ id: 'author-900' });
           expect(result[1]).toMatchObject({
             id: 'post-800',
             repostedAt: olderRepost.createdAt,
+            repostedBy: {
+              id: userId,
+            },
           });
         },
       },

@@ -71,4 +71,23 @@ export class TimelinePostResponseDto {
     example: true,
   })
   canDelete: boolean;
+
+  @ApiProperty({
+    description:
+      'Dados do usuário que realizou o repost, quando aplicável à timeline',
+    type: () => PostAuthorResponseDto,
+    required: false,
+    nullable: true,
+  })
+  @Type(() => PostAuthorResponseDto)
+  repostedBy: PostAuthorResponseDto | null;
+
+  @ApiProperty({
+    description: 'Data em que o repost ocorreu, quando aplicável',
+    example: '2025-02-17T10:15:30.000Z',
+    format: 'date-time',
+    required: false,
+    nullable: true,
+  })
+  repostedAt: Date | null;
 }

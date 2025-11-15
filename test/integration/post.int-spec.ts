@@ -10,6 +10,7 @@ import {
   createTestLike,
   createTestPost,
   createTestUser,
+  createTestRepost,
 } from './utils/factories';
 
 describe('PostService (integration)', () => {
@@ -85,6 +86,59 @@ describe('PostService (integration)', () => {
     expect(timeline[0].author.id).toBe(author.id);
     expect(timeline[0].likeCount).toBe(0);
     expect(timeline[0].commentCount).toBe(0);
+  });
+
+  it('includes reposts from followed users in the timeline respecting chronology', async () => {
+    const originalAuthor = await createTestUser({
+      email: 'original@example.com',
+      username: 'original_author',
+    });
+
+    const reposter = await createTestUser({
+      email: 'reposter@example.com',
+      username: 'reposter_user',
+    });
+
+    const follower = await createTestUser({
+      email: 'timeline-follower@example.com',
+      username: 'timeline_follower',
+    });
+
+    await createTestFollow({
+      followerId: follower.id,
+      followingId: reposter.id,
+    });
+
+    const originalPost = await createTestPost({
+      authorId: originalAuthor.id,
+      content: 'Post original para repost',
+      createdAt: new Date('2025-01-01T08:00:00.000Z'),
+    });
+
+    const directPost = await createTestPost({
+      authorId: reposter.id,
+      content: 'Post direto do reposter',
+      createdAt: new Date('2025-01-01T09:00:00.000Z'),
+    });
+
+    const repostCreatedAt = new Date('2025-01-02T12:00:00.000Z');
+
+    await createTestRepost({
+      userId: reposter.id,
+      postId: originalPost.id,
+      createdAt: repostCreatedAt,
+    });
+
+    const timeline = await service.getTimeline(follower.id);
+
+    expect(timeline).toHaveLength(2);
+    expect(timeline[0].id).toBe(originalPost.id);
+    expect(timeline[0].repostedAt?.toISOString()).toBe(
+      repostCreatedAt.toISOString(),
+    );
+    expect(timeline[0].repostedBy?.id).toBe(reposter.id);
+    expect(timeline[1].id).toBe(directPost.id);
+    expect(timeline[1].repostedAt).toBeNull();
   });
 
   it('returns liked posts ordered by like date', async () => {

@@ -135,6 +135,36 @@ export class PostRepository implements IPostRepository {
       where: { userId },
       orderBy: { createdAt: 'desc' },
       include: {
+        user: { select: authorSelect },
+        post: {
+          include: this.getPostInclude(currentUserId),
+        },
+      },
+    }) as Promise<RepostWithPostInteractions[]>;
+  }
+
+  async getTimelineReposts(
+    userId: string,
+    currentUserId?: string,
+  ): Promise<RepostWithPostInteractions[]> {
+    const followings = await this.prisma.follow.findMany({
+      where: { followerId: userId },
+      select: { followingId: true },
+    });
+
+    const authorIds = Array.from(
+      new Set([userId, ...followings.map((follow) => follow.followingId)]),
+    );
+
+    if (!authorIds.length) {
+      return [];
+    }
+
+    return this.prisma.repost.findMany({
+      where: { userId: { in: authorIds } },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: { select: authorSelect },
         post: {
           include: this.getPostInclude(currentUserId),
         },
