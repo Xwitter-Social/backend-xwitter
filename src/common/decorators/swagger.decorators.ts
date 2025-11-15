@@ -14,6 +14,7 @@ import {
   PostResponseDto,
   TimelinePostResponseDto,
   RepostTimelineResponseDto,
+  LikedTimelineResponseDto,
 } from '../../post/dto';
 import { SignInDto, AuthResponseDto } from '../../auth/dto';
 import {
@@ -373,6 +374,35 @@ export const ApiGetUserReposts = () =>
       status: 200,
       description: 'Lista de reposts do usuário',
       type: RepostTimelineResponseDto,
+      isArray: true,
+    }),
+    ApiResponse({
+      status: 401,
+      description: 'Token de acesso inválido ou expirado',
+    }),
+    ApiResponse({
+      status: 404,
+      description: 'Usuário não encontrado',
+    }),
+  );
+
+export const ApiGetUserLikedPosts = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: 'Listar posts curtidos de um usuário',
+      description:
+        'Retorna posts que o usuário curtiu, ordenados pela data da curtida (mais recentes primeiro)',
+    }),
+    ApiBearerAuth('JWT-auth'),
+    ApiParam({
+      name: 'userId',
+      description: 'ID do usuário',
+      example: '0d5c9b90-5e8a-4bb7-9f56-4a8da152a87d',
+    }),
+    ApiResponse({
+      status: 200,
+      description: 'Lista de posts curtidos pelo usuário',
+      type: LikedTimelineResponseDto,
       isArray: true,
     }),
     ApiResponse({

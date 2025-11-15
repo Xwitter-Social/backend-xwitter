@@ -3,6 +3,7 @@ import {
   CommentWithAuthor,
   IPostRepository,
   PostWithInteractions,
+  LikedPostWithInteractions,
   RepostWithPostInteractions,
 } from '../interfaces/post-repository.interface';
 
@@ -25,6 +26,11 @@ interface UserPostsStore {
 interface UserRepostsStore {
   userId: string;
   reposts: RepostWithPostInteractions[];
+}
+
+interface UserLikesStore {
+  userId: string;
+  likes: LikedPostWithInteractions[];
 }
 
 const clonePost = (post: PostWithInteractions): PostWithInteractions => ({
@@ -56,6 +62,7 @@ export class MockPostRepository implements IPostRepository {
   private searchStore: PostWithInteractions[] = [];
   private userPostsStore: UserPostsStore[] = [];
   private userRepostsStore: UserRepostsStore[] = [];
+  private userLikesStore: UserLikesStore[] = [];
   private idSequence = 1;
   private defaultDate = new Date('2025-01-01T00:00:00.000Z');
 
@@ -159,6 +166,25 @@ export class MockPostRepository implements IPostRepository {
     return Promise.resolve(stored.reposts.map(cloneRepost));
   }
 
+  getLikedPostsByUser(
+    userId: string,
+    currentUserId?: string,
+  ): Promise<LikedPostWithInteractions[]> {
+    void currentUserId;
+    const stored = this.userLikesStore.find((entry) => entry.userId === userId);
+
+    if (!stored) {
+      return Promise.resolve([]);
+    }
+
+    return Promise.resolve(
+      stored.likes.map((like) => ({
+        likedAt: like.likedAt,
+        post: clonePost(like.post),
+      })),
+    );
+  }
+
   seedPosts(posts: Post[]): void {
     this.posts = posts.map((post) => ({ ...post }));
   }
@@ -244,6 +270,28 @@ export class MockPostRepository implements IPostRepository {
     }
   }
 
+  seedUserLikes(userId: string, likes: LikedPostWithInteractions[]): void {
+    const clonedLikes = likes.map((like) => ({
+      likedAt: like.likedAt,
+      post: clonePost(like.post),
+    }));
+
+    const existingIndex = this.userLikesStore.findIndex(
+      (entry) => entry.userId === userId,
+    );
+
+    const entry: UserLikesStore = {
+      userId,
+      likes: clonedLikes,
+    };
+
+    if (existingIndex >= 0) {
+      this.userLikesStore[existingIndex] = entry;
+    } else {
+      this.userLikesStore.push(entry);
+    }
+  }
+
   clear(): void {
     this.posts = [];
     this.timelineStore = [];
@@ -251,6 +299,7 @@ export class MockPostRepository implements IPostRepository {
     this.searchStore = [];
     this.userPostsStore = [];
     this.userRepostsStore = [];
+    this.userLikesStore = [];
     this.idSequence = 1;
   }
 }

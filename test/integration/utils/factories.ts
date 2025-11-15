@@ -45,6 +45,20 @@ export async function createTestFollow(params: {
   });
 }
 
+export async function createTestLike(params: {
+  userId: string;
+  postId: string;
+  createdAt?: Date;
+}) {
+  return prisma.like.create({
+    data: {
+      userId: params.userId,
+      postId: params.postId,
+      createdAt: params.createdAt,
+    },
+  });
+}
+
 export async function createTestConversation(params: {
   participantIds: [string, string];
 }) {

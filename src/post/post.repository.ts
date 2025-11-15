@@ -4,6 +4,7 @@ import { PrismaService } from 'src/database/prisma.service';
 import {
   CommentWithAuthor,
   IPostRepository,
+  LikedPostWithInteractions,
   PostWithInteractions,
   RepostWithPostInteractions,
 } from './interfaces/post-repository.interface';
@@ -139,5 +140,29 @@ export class PostRepository implements IPostRepository {
         },
       },
     }) as Promise<RepostWithPostInteractions[]>;
+  }
+
+  async getLikedPostsByUser(
+    userId: string,
+    currentUserId?: string,
+  ): Promise<LikedPostWithInteractions[]> {
+    const likes = (await this.prisma.like.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        createdAt: true,
+        post: {
+          include: this.getPostInclude(currentUserId),
+        },
+      },
+    })) as Array<{
+      createdAt: Date;
+      post: PostWithInteractions;
+    }>;
+
+    return likes.map((like) => ({
+      likedAt: like.createdAt,
+      post: like.post,
+    }));
   }
 }

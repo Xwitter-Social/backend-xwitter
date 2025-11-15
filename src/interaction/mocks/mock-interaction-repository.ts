@@ -11,11 +11,14 @@ const cloneLike = (like: Like): Like => ({ ...like });
 const cloneRepost = (repost: Repost): Repost => ({ ...repost });
 const cloneComment = (comment: Comment): Comment => ({ ...comment });
 
+type LikeSeed = Partial<Pick<Like, 'userId' | 'postId' | 'createdAt'>>;
+
 export class MockInteractionRepository implements IInteractionRepository {
   private follows: Follow[] = [];
   private likes: Like[] = [];
   private reposts: Repost[] = [];
   private comments: Comment[] = [];
+  private likeSequence = 1;
   private repostIdSequence = 1;
   private commentIdSequence = 1;
 
@@ -52,7 +55,14 @@ export class MockInteractionRepository implements IInteractionRepository {
   }
 
   createLike(userId: string, postId: string): Promise<Like> {
-    const like: Like = { userId, postId };
+    const timestamp = DEFAULT_BASE_DATE.getTime() + this.likeSequence * 1000;
+    const like: Like = {
+      userId,
+      postId,
+      createdAt: new Date(timestamp),
+    };
+
+    this.likeSequence += 1;
     this.likes.push(like);
     return Promise.resolve(cloneLike(like));
   }
@@ -142,6 +152,7 @@ export class MockInteractionRepository implements IInteractionRepository {
     this.likes = [];
     this.reposts = [];
     this.comments = [];
+    this.likeSequence = 1;
     this.repostIdSequence = 1;
     this.commentIdSequence = 1;
   }
@@ -153,11 +164,21 @@ export class MockInteractionRepository implements IInteractionRepository {
     }));
   }
 
-  seedLikes(likes: Array<Partial<Like>>): void {
-    this.likes = likes.map((like, index) => ({
-      userId: like.userId ?? `user-${index + 1}`,
-      postId: like.postId ?? `post-${index + 1}`,
-    }));
+  seedLikes(likes: LikeSeed[]): void {
+    this.likes = likes.map((like, index) => {
+      const createdAt: Date =
+        like.createdAt instanceof Date
+          ? like.createdAt
+          : new Date(DEFAULT_BASE_DATE.getTime() + (index + 1) * 1000);
+
+      return {
+        userId: like.userId ?? `user-${index + 1}`,
+        postId: like.postId ?? `post-${index + 1}`,
+        createdAt,
+      };
+    });
+
+    this.likeSequence = this.likes.length + 1;
   }
 
   seedReposts(reposts: Array<Partial<Repost>>): void {

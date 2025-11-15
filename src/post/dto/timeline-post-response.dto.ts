@@ -40,4 +40,35 @@ export class TimelinePostResponseDto {
     example: 5,
   })
   commentCount: number;
+
+  @ApiProperty({
+    description: 'Quantidade total de reposts do post',
+    example: 3,
+  })
+  repostCount: number;
+
+  @ApiProperty({
+    description: 'Indica se o usuário atual curtiu o post',
+    example: true,
+  })
+  isLiked: boolean;
+
+  @ApiProperty({
+    description: 'Indica se o usuário atual repostou o post',
+    example: false,
+  })
+  isReposted: boolean;
+
+  @ApiProperty({
+    description: 'Identificador do repost do usuário atual, quando existir',
+    example: 'repost-123',
+    nullable: true,
+  })
+  repostId: string | null;
+
+  @ApiProperty({
+    description: 'Indica se o usuário atual pode excluir o post',
+    example: true,
+  })
+  canDelete: boolean;
 }

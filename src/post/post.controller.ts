@@ -15,6 +15,7 @@ import {
   PostDetailsDto,
   TimelinePostDto,
   RepostTimelineDto,
+  LikedPostDto,
 } from './post.service';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { CreatePostDto } from './dto';
@@ -30,6 +31,7 @@ import {
   ApiSearchPosts,
   ApiGetUserPosts,
   ApiGetUserReposts,
+  ApiGetUserLikedPosts,
 } from '../common/decorators/swagger.decorators';
 
 @ApiTags('posts')
@@ -84,6 +86,16 @@ export class PostController {
     @CurrentUser() currentUser: CurrentUserData,
   ): Promise<RepostTimelineDto[]> {
     return this.postService.getRepostsByUser(userId, currentUser.sub);
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('user/:userId/likes')
+  @ApiGetUserLikedPosts()
+  async getLikedPostsByUser(
+    @Param('userId') userId: string,
+    @CurrentUser() currentUser: CurrentUserData,
+  ): Promise<LikedPostDto[]> {
+    return this.postService.getLikedPostsByUser(userId, currentUser.sub);
   }
 
   @UseGuards(AuthGuard)

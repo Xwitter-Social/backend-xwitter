@@ -5,7 +5,12 @@ import { PostRepository } from 'src/post/post.repository';
 import { IPostRepository } from 'src/post/interfaces/post-repository.interface';
 import { IUserRepository } from 'src/user/interfaces/user-repository.interface';
 import { UserRepository } from 'src/user/user.repository';
-import { createTestFollow, createTestUser } from './utils/factories';
+import {
+  createTestFollow,
+  createTestLike,
+  createTestPost,
+  createTestUser,
+} from './utils/factories';
 
 describe('PostService (integration)', () => {
   let moduleRef: TestingModule;
@@ -80,5 +85,49 @@ describe('PostService (integration)', () => {
     expect(timeline[0].author.id).toBe(author.id);
     expect(timeline[0].likeCount).toBe(0);
     expect(timeline[0].commentCount).toBe(0);
+  });
+
+  it('returns liked posts ordered by like date', async () => {
+    const author = await createTestUser({
+      email: 'author-like@example.com',
+      username: 'author_like',
+    });
+    const liker = await createTestUser({
+      email: 'liker@example.com',
+      username: 'liker_user',
+    });
+
+    const olderPost = await createTestPost({
+      authorId: author.id,
+      content: 'Post curtido mais antigo',
+    });
+    const newerPost = await createTestPost({
+      authorId: author.id,
+      content: 'Post curtido mais recente',
+    });
+
+    const olderDate = new Date('2025-05-01T10:00:00.000Z');
+    const newerDate = new Date('2025-06-01T10:00:00.000Z');
+
+    await createTestLike({
+      userId: liker.id,
+      postId: newerPost.id,
+      createdAt: newerDate,
+    });
+
+    await createTestLike({
+      userId: liker.id,
+      postId: olderPost.id,
+      createdAt: olderDate,
+    });
+
+    const likedPosts = await service.getLikedPostsByUser(liker.id, liker.id);
+
+    expect(likedPosts).toHaveLength(2);
+    expect(likedPosts[0].id).toBe(newerPost.id);
+    expect(likedPosts[0].likedAt.toISOString()).toBe(newerDate.toISOString());
+    expect(likedPosts[0].isLiked).toBe(true);
+    expect(likedPosts[1].id).toBe(olderPost.id);
+    expect(likedPosts[1].likedAt.toISOString()).toBe(olderDate.toISOString());
   });
 });

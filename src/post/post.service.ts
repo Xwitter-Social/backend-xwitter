@@ -49,6 +49,10 @@ export interface RepostTimelineDto extends TimelinePostDto {
   repostedAt: Date;
 }
 
+export interface LikedPostDto extends TimelinePostDto {
+  likedAt: Date;
+}
+
 @Injectable()
 export class PostService {
   constructor(
@@ -108,6 +112,22 @@ export class PostService {
     return reposts.map((repost) => ({
       repostedAt: repost.createdAt,
       ...this.mapPostToTimelineDto(repost.post, currentUserId),
+    }));
+  }
+
+  async getLikedPostsByUser(
+    userId: string,
+    currentUserId?: string,
+  ): Promise<LikedPostDto[]> {
+    await this.ensureUserExists(userId);
+    const likedPosts = await this.postRepo.getLikedPostsByUser(
+      userId,
+      currentUserId,
+    );
+
+    return likedPosts.map(({ post, likedAt }) => ({
+      ...this.mapPostToTimelineDto(post, currentUserId),
+      likedAt,
     }));
   }
 

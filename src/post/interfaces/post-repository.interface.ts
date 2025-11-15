@@ -71,6 +71,11 @@ export type RepostWithPostInteractions = Omit<
   post: PostWithInteractions;
 };
 
+export interface LikedPostWithInteractions {
+  likedAt: Date;
+  post: PostWithInteractions;
+}
+
 export abstract class IPostRepository {
   abstract create(data: Prisma.PostCreateInput): Promise<Post>;
   abstract findById(postId: string): Promise<Post | null>;
@@ -93,4 +98,8 @@ export abstract class IPostRepository {
     userId: string,
     currentUserId?: string,
   ): Promise<RepostWithPostInteractions[]>;
+  abstract getLikedPostsByUser(
+    userId: string,
+    currentUserId?: string,
+  ): Promise<LikedPostWithInteractions[]>;
 }

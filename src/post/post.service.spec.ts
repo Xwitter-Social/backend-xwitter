@@ -526,6 +526,74 @@ describe('PostService', () => {
     ])('$description', ({ execute }) => execute());
   });
 
+  describe('getLikedPostsByUser', () => {
+    const userId = 'user-123';
+
+    test.each([
+      {
+        description: 'should return liked posts ordered by likedAt',
+        execute: async () => {
+          userRepository.seed([buildUser({ id: userId, username: 'user123' })]);
+
+          const recentLike = {
+            likedAt: new Date('2025-06-10T10:00:00.000Z'),
+            post: buildPostWithInteractions({
+              id: 'post-liked-new',
+              authorId: 'author-liked-new',
+              content: 'Post curtido mais recente',
+              createdAt: new Date('2025-05-01T08:00:00.000Z'),
+              likedByCurrentUser: true,
+            }),
+          };
+
+          const olderLike = {
+            likedAt: new Date('2025-05-01T10:00:00.000Z'),
+            post: buildPostWithInteractions({
+              id: 'post-liked-old',
+              authorId: 'author-liked-old',
+              content: 'Post curtido mais antigo',
+              createdAt: new Date('2025-04-01T08:00:00.000Z'),
+            }),
+          };
+
+          repository.seedUserLikes(userId, [recentLike, olderLike]);
+
+          const result = await service.getLikedPostsByUser(userId, userId);
+
+          expect(result).toHaveLength(2);
+          expect(result[0]).toMatchObject({
+            id: 'post-liked-new',
+            likedAt: recentLike.likedAt,
+            isLiked: true,
+          });
+          expect(result[1]).toMatchObject({
+            id: 'post-liked-old',
+            likedAt: olderLike.likedAt,
+            isLiked: false,
+          });
+        },
+      },
+      {
+        description: 'should return empty array when user has no liked posts',
+        execute: async () => {
+          userRepository.seed([buildUser({ id: userId, username: 'user123' })]);
+
+          const result = await service.getLikedPostsByUser(userId);
+
+          expect(result).toEqual([]);
+        },
+      },
+      {
+        description: 'should throw NotFoundException when user does not exist',
+        execute: async () => {
+          await expect(
+            service.getLikedPostsByUser('missing-user'),
+          ).rejects.toBeInstanceOf(NotFoundException);
+        },
+      },
+    ])('$description', ({ execute }) => execute());
+  });
+
   describe('getPostDetails', () => {
     test.each([
       {
