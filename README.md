@@ -233,7 +233,28 @@ docker-compose exec backend npx prisma db seed
 
 ---
 
+## ✅ Integração Contínua
+
+Pull requests direcionados à branch `main` disparam automaticamente o workflow [`backend-ci`](.github/workflows/backend-ci.yml) no GitHub Actions. O pipeline utiliza o Docker Compose do projeto para:
+
+- preparar os arquivos `.env` a partir dos exemplos;
+- iniciar o serviço de banco `db`;
+- executar `npm run lint` dentro do serviço `backend`;
+- rodar a suíte de testes via serviço `tests`;
+- derrubar os containers ao final da execução (inclusive em caso de falhas).
+
+> 💡 O pipeline é obrigatório para merge na `main`. Garanta que novas dependências ou scripts funcionem dentro do ambiente Docker antes de abrir o PR.
+
+---
+
 ## 🤝 Guia de Contribuição
+
+### 🚦 Política de Branches
+
+- Desenvolva sempre a partir da branch `develop` (ex.: `git checkout develop && git pull`).
+- Crie branches de feature/fix derivadas de `develop` seguindo um prefixo descritivo (`feature/`, `fix/`, `chore/`...).
+- Ao finalizar o trabalho, abra um PR de `develop` para `main`. Pull requests para `main` exigem pelo menos **uma aprovação** antes do merge.
+- Não faça commits diretamente em `main`.
 
 ### 🔧 Adicionando Dependências
 
