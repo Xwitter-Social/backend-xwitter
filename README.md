@@ -152,7 +152,7 @@ docker-compose up --build tests
 
 ```
 
-> 💡 **Usando Docker?** O serviço `tests` do `docker-compose` já utiliza `npm run test`, garantindo a execução de testes unitários e de integração sempre que o ambiente de testes for iniciado.
+> 💡 **Usando Docker:** O serviço `tests` do `docker-compose` já utiliza `npm run test`, garantindo a execução de testes unitários e de integração sempre que o ambiente de testes for iniciado.
 
 Após a inicialização, a aplicação estará disponível em:
 
@@ -184,7 +184,7 @@ docker-compose up -d
 # Para visualizar logs
 docker-compose logs -f backend
 
-# Para rodar os testes unitários e ver o output no terminal
+# Para rodar os testes unitários e de integração e ver o output no terminal
 docker-compose up tests
 
 # Para parar
@@ -218,7 +218,7 @@ docker-compose exec backend npx prisma migrate reset --force
 
 ### Seed de Dados
 
-- ✅ **Seed automático no Docker**: sempre que o serviço `backend` sobe em modo de desenvolvimento (`NODE_ENV=development`), executamos `prisma db seed` automaticamente. Isso garante que exista um conjunto mínimo de usuários, posts, follows e uma conversa com mensagens para testar rapidamente.
+- ✅ **Seed automático no Docker**: sempre que o serviço `backend` sobe em modo de desenvolvimento (`NODE_ENV=development`), `prisma db seed` é executado automaticamente. Isso garante que exista um conjunto mínimo de usuários, posts, follows e uma conversa com mensagens para testar rapidamente.
 - 🔧 **Desativar/forçar o seed**: defina a variável `ENABLE_STARTUP_SEED=false` no `docker-compose.yml` (ou no `.env`) caso não queira popular automaticamente. Em produção o seed é ignorado por padrão.
 - 👥 **Credenciais padrão**:
   - `alice@xwitter.dev` / senha `xwitter123`
