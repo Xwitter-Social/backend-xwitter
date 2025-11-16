@@ -4,7 +4,9 @@
 
 # 🐦 Xwitter - Backend
 
-Uma aplicação de rede social moderna inspirada no Twitter, desenvolvida com **NestJS** e totalmente containerizada com **Docker**. O projeto implementa funcionalidades essenciais de uma rede social, incluindo autenticação JWT, gerenciamento de usuários, posts, comentários, curtidas e sistema de seguidores.
+> 🌐 **Aplicação em produção:** https://xwitter-social.vercel.app/ — crie sua conta e comece a interagir!
+
+Uma aplicação de rede social moderna inspirada no Twitter, desenvolvida com **NestJS** e totalmente containerizada com **Docker**. O backend alimenta o frontend disponível em [Xwitter-Social/frontend-xwitter](https://github.com/Xwitter-Social/frontend-xwitter) e implementa funcionalidades essenciais: autenticação JWT, gerenciamento de usuários, posts, comentários, curtidas e sistema de seguidores.
 
 ## 🚀 Sobre o Projeto
 
@@ -15,6 +17,7 @@ Xwitter é um clone do Twitter que demonstra boas práticas de engenharia de sof
 - **Validação Robusta**: Validação de dados com class-validator
 - **Segurança**: Autenticação JWT e autorização baseada em roles
 - **DevOps**: Ambiente totalmente containerizado para desenvolvimento e produção
+- **Deploy**: Backend publicado na Render; banco gerenciado pelo Neon/Postgres serverless
 
 ## 🛠️ Tecnologias
 
@@ -233,17 +236,26 @@ docker-compose exec backend npx prisma db seed
 
 ---
 
-## ✅ Integração Contínua
+## ✅ Integração Contínua (CI)
 
-Pull requests direcionados à branch `main` disparam automaticamente o workflow [`backend-ci`](.github/workflows/backend-ci.yml) no GitHub Actions. O pipeline utiliza o Docker Compose do projeto para:
+Pull requests direcionados à branch `main` disparam automaticamente o workflow [`backend-ci`](.github/workflows/backend-ci.yml) no GitHub Actions. O pipeline usa o Docker Compose do projeto para:
 
-- preparar os arquivos `.env` a partir dos exemplos;
-- iniciar o serviço de banco `db`;
+- preparar arquivos `.env` a partir dos exemplos;
+- subir o serviço `db` (Postgres local);
 - executar `npm run lint` dentro do serviço `backend`;
 - rodar a suíte de testes via serviço `tests`;
-- derrubar os containers ao final da execução (inclusive em caso de falhas).
+- derrubar containers ao final (mesmo em caso de falhas).
 
-> 💡 O pipeline é obrigatório para merge na `main`. Garanta que novas dependências ou scripts funcionem dentro do ambiente Docker antes de abrir o PR.
+> 💡 Esse check é obrigatório para merge na `main`. Certifique-se de que lint e testes passam antes de abrir o PR.
+
+## 🚀 Deploy Contínuo (CD)
+
+- **Backend**: hospedado na [Render](https://render.com) como Web Service usando o `Dockerfile` do projeto. Cada merge na `main` dispara um redeploy automático, que aplica `prisma migrate deploy` e inicia o NestJS em modo produção (`npm run start:prod`).
+- **Banco de Dados**: Postgres gerenciado no [Neon](https://neon.tech). A string `DATABASE_URL` é configurada via secrets no Render. Dados persistem entre deploys.
+- **Swagger em produção**: https://backend-xwitter.onrender.com/docs.
+- **Frontend associado**: https://xwitter-social.vercel.app/ (repo complementar em [Xwitter-Social/frontend-xwitter](https://github.com/Xwitter-Social/frontend-xwitter)).
+
+> ℹ️ Para atualizar migrations: gere localmente (`prisma migrate dev`), commite e faça merge. O deploy na Render executa `prisma migrate deploy` contra o Neon automaticamente.
 
 ---
 
