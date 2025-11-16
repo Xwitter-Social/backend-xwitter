@@ -5,7 +5,7 @@ RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 WORKDIR /usr/src/app
 
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 COPY . .
 
 RUN npx prisma generate
@@ -34,4 +34,4 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 EXPOSE 3001
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
-CMD ["npm", "run", "start:dev"]
+CMD ["npm", "run", "start:prod"]
