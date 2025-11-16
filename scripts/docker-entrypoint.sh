@@ -6,8 +6,16 @@ export ENABLE_STARTUP_SEED="${ENABLE_STARTUP_SEED:-true}"
 
 echo "🚀 Iniciando aplicação (NODE_ENV=$NODE_ENV)..."
 
-echo "⏳ Aguardando PostgreSQL estar disponível..."
-while ! nc -z db 5432; do
+DB_HOST="db"
+DB_PORT="5432"
+
+if [ -n "$DATABASE_URL" ]; then
+  DB_HOST=$(node -e "const url = new URL(process.argv[1]); console.log(url.hostname || 'db');" "$DATABASE_URL")
+  DB_PORT=$(node -e "const url = new URL(process.argv[1]); console.log(url.port || '5432');" "$DATABASE_URL")
+fi
+
+echo "⏳ Aguardando PostgreSQL estar disponível em $DB_HOST:$DB_PORT..."
+until nc -z "$DB_HOST" "$DB_PORT"; do
   sleep 1
 done
 echo "✅ PostgreSQL está disponível!"
