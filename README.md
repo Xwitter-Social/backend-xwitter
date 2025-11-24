@@ -310,6 +310,8 @@ npm run test
 npm run test:unit       # Apenas testes unitários
 
 npm run test:integration # Apenas testes de integração
+
+npm run test:cov        # Gera relatório de cobertura
 ```
 
 ### 📋 Padrões de Commit
